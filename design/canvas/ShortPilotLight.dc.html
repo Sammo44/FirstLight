@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Pilot Light, worked through</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 40px; background: #ECEBE7; display: flex; flex-direction: column; gap: 24px; font-family: 'Sora', system-ui, sans-serif; color: #0E1426">
+
+<div style="height: 120px; display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 66px; font-weight: 600; letter-spacing: -0.03em; line-height: 0.95">pilot light</span>
+<span style="font-size: 17px; color: #434A5E">Always on. Ready the night they need it.</span>
+</div>
+<div style="display: flex; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 64px; height: 64px; border-radius: 14px; background: #0E1426"></div><span style="font-size: 12px; color: #434A5E">#0E1426</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 64px; height: 64px; border-radius: 14px; background: #4C7DF0"></div><span style="font-size: 12px; color: #434A5E">#4C7DF0</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 64px; height: 64px; border-radius: 14px; background: #F5B342"></div><span style="font-size: 12px; color: #434A5E">#F5B342</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 64px; height: 64px; border-radius: 14px; background: #F2F4FA; border: 1px solid #D5D9E6; box-sizing: border-box"></div><span style="font-size: 12px; color: #434A5E">#F2F4FA</span></div>
+</div>
+</div>
+
+<div style="height: 380px; display: flex; gap: 24px">
+<div style="flex: 1; border-radius: 22px; background: #0E1426; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px">
+<svg width="200" height="200" viewBox="0 0 100 100" role="img" aria-label="Option A: a two-tone gas flame in a disc"><circle cx="50" cy="50" r="48" fill="#18223F"></circle><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path><path d="M50 46 C56 56 61 62 61 70 C61 78 56 83 50 83 C44 83 39 78 39 70 C39 62 44 56 50 46 Z" fill="#4C7DF0"></path></svg>
+<span style="font-size: 15px; color: #C9D0E6">A · The flame</span>
+</div>
+<div style="flex: 1; border-radius: 22px; background: #0E1426; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px">
+<svg width="200" height="200" viewBox="0 0 100 100" role="img" aria-label="Option B: the power symbol, with a flame where the line would be"><path d="M68.35 27.79 A32 32 0 1 1 31.65 27.79" fill="none" stroke="#4C7DF0" stroke-width="7" stroke-linecap="round"></path><g transform="translate(50 54) scale(0.46) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path><path d="M50 46 C56 56 61 62 61 70 C61 78 56 83 50 83 C44 83 39 78 39 70 C39 62 44 56 50 46 Z" fill="#4C7DF0"></path></g></svg>
+<span style="font-size: 15px; color: #C9D0E6">B · Always on</span>
+</div>
+<div style="flex: 1; border-radius: 22px; background: #0E1426; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px">
+<svg width="200" height="200" viewBox="0 0 100 100" role="img" aria-label="Option C: the little window on a heater, with the pilot flame lit"><rect x="16" y="12" width="68" height="76" rx="16" fill="#18223F" stroke="#3A4A7A" stroke-width="3"></rect><rect x="27" y="23" width="46" height="54" rx="9" fill="#070B17"></rect><circle cx="50" cy="60" r="16" fill="#F5B342" opacity="0.12"></circle><g transform="translate(50 68) scale(0.42) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path><path d="M50 46 C56 56 61 62 61 70 C61 78 56 83 50 83 C44 83 39 78 39 70 C39 62 44 56 50 46 Z" fill="#4C7DF0"></path></g><rect x="37" y="68" width="26" height="3" rx="1.5" fill="#3A4A7A"></rect></svg>
+<span style="font-size: 15px; color: #C9D0E6">C · Check the pilot’s lit</span>
+</div>
+</div>
+
+<div style="flex: 1; display: flex; gap: 24px">
+<div style="flex: 3; border-radius: 22px; background: #F2F4FA; display: flex; align-items: center; gap: 22px; padding: 0 40px">
+<svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true"><path d="M68.35 27.79 A32 32 0 1 1 31.65 27.79" fill="none" stroke="#4C7DF0" stroke-width="7" stroke-linecap="round"></path><g transform="translate(50 54) scale(0.46) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path><path d="M50 46 C56 56 61 62 61 70 C61 78 56 83 50 83 C44 83 39 78 39 70 C39 62 44 56 50 46 Z" fill="#4C7DF0"></path></g></svg>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 66px; font-weight: 600; letter-spacing: -0.03em; line-height: 0.95; color: #0E1426">pilot light</span>
+<span style="font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; color: #434A5E">Your plan, for whoever steps in</span>
+</div>
+</div>
+<div style="flex: 2; border-radius: 22px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 26px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 120px; height: 120px; border-radius: 28px; background: #0E1426; display: flex; align-items: center; justify-content: center"><svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true"><path d="M68.35 27.79 A32 32 0 1 1 31.65 27.79" fill="none" stroke="#4C7DF0" stroke-width="7" stroke-linecap="round"></path><g transform="translate(50 54) scale(0.46) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path><path d="M50 46 C56 56 61 62 61 70 C61 78 56 83 50 83 C44 83 39 78 39 70 C39 62 44 56 50 46 Z" fill="#4C7DF0"></path></g></svg></div>
+<span style="font-size: 13px; color: #3B3F4C">Pilot Light</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 72px; height: 72px; border-radius: 17px; background: #0E1426; display: flex; align-items: center; justify-content: center"><svg width="60" height="60" viewBox="0 0 100 100" aria-hidden="true"><path d="M68.35 27.79 A32 32 0 1 1 31.65 27.79" fill="none" stroke="#4C7DF0" stroke-width="8" stroke-linecap="round"></path><g transform="translate(50 54) scale(0.5) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path></g></svg></div>
+<span style="font-size: 12px; color: #3B3F4C">Pilot Light</span>
+</div>
+<div style="width: 40px; height: 40px; border-radius: 10px; background: #0E1426; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 100 100" aria-hidden="true"><path d="M68.35 27.79 A32 32 0 1 1 31.65 27.79" fill="none" stroke="#4C7DF0" stroke-width="10" stroke-linecap="round"></path><g transform="translate(50 54) scale(0.52) translate(-50 -86)"><path d="M50 14 C60 32 72 44 72 62 C72 76 62 86 50 86 C38 86 28 76 28 62 C28 46 40 34 50 14 Z" fill="#F5B342"></path></g></svg></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

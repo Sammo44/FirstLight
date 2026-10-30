@@ -1,0 +1,7 @@
+# Personal statements and other real data never go in the repo
+*.csv
+*.CSV
+tests/fixtures/
+
+# Test output
+tests/out/

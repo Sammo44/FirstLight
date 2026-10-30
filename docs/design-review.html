@@ -1,0 +1,374 @@
+<title>AMFY Experience Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single reading column for the argument, widening to two columns where a screen sketch sits beside its explanation. Uses AMFY's own lamp-and-dusk language. */
+:root{
+  --bg:#F7F5F0; --paper:#FFFFFF; --ink:#1E2140; --muted:#5A5F7D; --faint:#8A8FA8; --line:#E2E0DA;
+  --lamp:#B8711E; --lamp-ink:#87510C; --lamp-soft:#F6E8D0; --dusk:#E6E4F2; --dusk-ink:#4A4782; --calm:#2D6A64; --calm-soft:#DCEDEA; --warn:#9A3B2E; --warn-soft:#F6E1DC;
+  --display:"Newsreader","Iowan Old Style",Georgia,serif; --body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --phone:#14172E;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#11132A; --paper:#1A1D38; --ink:#ECEDF6; --muted:#A4A9C4; --faint:#7C819E; --line:#2C3154;
+  --lamp:#E7A64F; --lamp-ink:#F2BC6E; --lamp-soft:#372B19; --dusk:#29284A; --dusk-ink:#C4C1F2; --calm:#7FC6BE; --calm-soft:#163230; --warn:#F0A493; --warn-soft:#3A2220; --phone:#0A0C1E; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#11132A; --paper:#1A1D38; --ink:#ECEDF6; --muted:#A4A9C4; --faint:#7C819E; --line:#2C3154;
+  --lamp:#E7A64F; --lamp-ink:#F2BC6E; --lamp-soft:#372B19; --dusk:#29284A; --dusk-ink:#C4C1F2; --calm:#7FC6BE; --calm-soft:#163230; --warn:#F0A493; --warn-soft:#3A2220; --phone:#0A0C1E; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 80px}
+.wrap{max-width:1040px;margin:0 auto}
+.col{max-width:680px}
+h1,h2,h3{font-family:var(--display);font-weight:500;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,5.5vw,3.4rem);letter-spacing:-.015em}
+h2{font-size:clamp(1.6rem,3.4vw,2.1rem);margin-top:8px}
+h3{font-size:1.25rem}
+p{margin:0}
+.eyebrow{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--lamp-ink)}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+section{display:grid;gap:18px;padding-block:56px;border-top:1px solid var(--line)}
+header{display:grid;gap:20px;padding-block:64px 48px}
+.lede{font-size:1.22rem;color:var(--muted);max-width:62ch}
+.lede b{color:var(--ink);font-weight:500}
+.mark{display:inline-flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.05rem}
+.mark i{width:12px;height:12px;border-radius:50%;background:var(--lamp);box-shadow:0 0 0 5px var(--lamp-soft)}
+ul.plain{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+ul.plain li{padding-left:22px;position:relative}
+ul.plain li::before{content:"";position:absolute;left:2px;top:.68em;width:7px;height:7px;border-radius:50%;background:var(--calm)}
+.issues{display:grid;gap:0;counter-reset:n}
+.issue{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 14px;padding-block:18px;border-top:1px solid var(--line)}
+.issue:first-child{border-top:0}
+.issue .n{font-family:var(--display);font-size:1.6rem;color:var(--lamp);line-height:1}
+.issue h3{font-size:1.15rem}
+.issue .feel{color:var(--muted);font-style:italic;font-family:var(--display);font-size:1.05rem}
+.issue .fix{grid-column:2;font-size:.95rem}
+.issue .fix b{color:var(--calm);font-weight:600}
+.shifts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.shift{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:6px;align-content:start}
+.shift .from{font-size:.85rem;color:var(--faint);text-decoration:line-through;text-decoration-color:var(--faint)}
+.shift .to{font-family:var(--display);font-size:1.2rem}
+.moment{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:start;padding-block:28px;border-top:1px dashed var(--line)}
+.moment:first-of-type{border-top:0}
+.moment .txt{display:grid;gap:12px;min-width:0}
+.moment .tag{font-size:.78rem;font-weight:600;color:var(--dusk-ink);background:var(--dusk);border-radius:99px;padding:3px 10px;justify-self:start}
+.moments-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.mini{border-left:3px solid var(--lamp);padding:4px 0 4px 14px;display:grid;gap:4px}
+@media (max-width:760px){ .moment{grid-template-columns:minmax(0,1fr)} .moment .phone{justify-self:center} }
+
+/* screen sketches */
+.phone{width:300px;max-width:100%;background:var(--phone);border-radius:34px;padding:10px;box-shadow:0 18px 50px rgba(20,23,46,.22)}
+.scr{background:#FBFAF6;color:#1E2140;border-radius:26px;overflow:hidden;display:grid;grid-template-rows:auto 1fr auto;min-height:540px;font-size:13px;line-height:1.45}
+.scr .bar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px;font-size:11px;color:#6B6F88}
+.scr .bar .lampdot{width:9px;height:9px;border-radius:50%;background:#C47E26;box-shadow:0 0 0 4px #F6E8D0}
+.scr .body{padding:6px 16px 12px;display:grid;gap:10px;align-content:start}
+.scr h4{font-family:var(--display);font-weight:500;font-size:21px;line-height:1.15;margin:0}
+.scr .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:#87510C}
+.scr .card{background:#fff;border:1px solid #E6E3DC;border-radius:14px;padding:12px;display:grid;gap:8px}
+.scr .row{display:flex;gap:8px;align-items:center}
+.scr .ok{color:#2D6A64} .scr .no{color:#9A3B2E}
+.scr .chk{display:grid;grid-template-columns:16px 1fr;gap:6px;align-items:start}
+.scr .btn{border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;border:1px solid #D8D5CC;background:#fff;color:#1E2140;white-space:nowrap}
+.scr .btn.p{background:#1E2140;color:#fff;border-color:#1E2140}
+.scr .btn.g{background:#2D6A64;color:#fff;border-color:#2D6A64}
+.scr .say{background:#E6E4F2;color:#3A3770;border-radius:14px 14px 4px 14px;padding:9px 11px;justify-self:end;max-width:88%}
+.scr .ask{font-family:var(--display);font-size:16px;line-height:1.3}
+.scr .field{display:grid;grid-template-columns:76px 1fr;gap:6px;font-size:12px;border-top:1px solid #EFEDE7;padding-top:6px}
+.scr .field span:first-child{color:#6B6F88}
+.scr .compose{display:flex;gap:6px;align-items:center;padding:10px 12px 14px;border-top:1px solid #ECE9E2;background:#fff}
+.scr .compose .in{flex:1;background:#F3F1EC;border-radius:99px;padding:9px 12px;color:#8A8FA8;font-size:12px}
+.scr .ic{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#F3F1EC;flex:none}
+.scr .ic.mic{background:#C47E26}
+.scr .tabs{display:flex;justify-content:space-around;padding:8px 6px 12px;border-top:1px solid #ECE9E2;background:#fff;font-size:10.5px;color:#8A8FA8}
+.scr .tabs b{color:#1E2140;font-weight:600}
+.scr .meter{height:6px;border-radius:99px;background:#ECE9E2;overflow:hidden}
+.scr .meter i{display:block;height:100%;background:#2D6A64;border-radius:99px}
+.scr .pill{font-size:10.5px;font-weight:600;border-radius:99px;padding:2px 8px;background:#DCEDEA;color:#2D6A64}
+.scr .src{display:flex;gap:8px;align-items:center;font-size:11px;color:#6B6F88}
+.scr .thumb{width:38px;height:30px;border-radius:6px;background:repeating-linear-gradient(135deg,#E8E2D4 0 6px,#F1ECE1 6px 12px);flex:none}
+.scr .swipe{position:relative;display:grid}
+.scr .swipe .back{position:absolute;inset:8px -6px -8px 6px;background:#fff;border:1px solid #E6E3DC;border-radius:14px;opacity:.6}
+.scr .swipe .card{position:relative}
+.scr .tx{display:grid;grid-template-columns:1fr auto;font-size:11.5px;color:#6B6F88}
+.scr .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.scr .acts .btn{text-align:center;padding:9px 4px}
+.scr .ans{background:#fff;border:1px solid #E6E3DC;border-radius:14px 14px 14px 4px;padding:10px 11px;display:grid;gap:4px}
+.scr svg{display:block}
+
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:12px;align-content:start}
+.box h3{font-size:1.15rem}
+.now li::before{background:var(--calm)}
+.later li::before{background:var(--lamp)}
+ol.order{margin:0;padding:0;list-style:none;display:grid;gap:0;counter-reset:o}
+ol.order li{counter-increment:o;display:grid;grid-template-columns:44px minmax(0,1fr);gap:2px 14px;padding-block:16px;border-top:1px solid var(--line)}
+ol.order li:first-child{border-top:0}
+ol.order li::before{content:counter(o);font-family:var(--display);font-size:1.6rem;color:var(--lamp);line-height:1;grid-row:span 2}
+ol.order li b{font-weight:600}
+.layout{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto}
+.layout svg{min-width:640px;width:100%;height:auto;display:block}
+.principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px 32px}
+.principles div{display:grid;gap:4px}
+.principles h3{font-size:1.08rem}
+.principles p{font-size:.96rem;color:var(--muted)}
+.quote{font-family:var(--display);font-size:clamp(1.3rem,2.6vw,1.6rem);line-height:1.35;max-width:36ch}
+footer{padding-top:40px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
+@media (prefers-reduced-motion: no-preference){ .mark i{animation:glow 4s ease-in-out infinite} @keyframes glow{50%{box-shadow:0 0 0 8px var(--lamp-soft)}} }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="mark"><i></i>After Me, For You</div>
+  <span class="eyebrow">Experience review · 30 October 2026</span>
+  <h1>From a well-made form to the thing families thank you for</h1>
+  <p class="lede">The foundations are strong. Right now, though, the experience is a careful, well-meaning form: around 50 topics and 200 fields, sorted into five filing cabinets. <b>To be loved, it has to feel like talking to someone who knows exactly what to ask.</b> It should take your life in the form it already comes in, which is your voice, photos and statements. And it should show your family, clearly, what they can now do.</p>
+</header>
+
+<section>
+  <div class="col"><span class="eyebrow">Keep</span><h2>What’s already right</h2></div>
+  <ul class="plain col">
+    <li><b>“If you were in hospital tonight.”</b> It’s the best idea in the product: urgent, true, and not morbid. It earns the right to talk about death later.</li>
+    <li><b>The 15-minute essentials and “Enough for now”.</b> Permission to stop is rare in this category and very humane.</li>
+    <li><b>Finding bills from statements, on the device.</b> This is the closest thing to magic in the prototype today.</li>
+    <li><b>The letter guidance and writing coach.</b> It helps people start without writing for them.</li>
+    <li><b>The vault boundary.</b> Passwords and card numbers never go into the plan your family reads.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Critique</span><h2>What gets in the way</h2><p class="muted" style="margin-top:8px">Most important first. Under each one: how it feels to the person using it, then the fix.</p></div>
+  <div class="issues col">
+    <div class="issue"><span class="n">1</span><h3>It feels like homework</h3><p class="feel">“Something written in 4 of 8 topics. Only 46 to go.”</p>
+      <p class="fix"><b>Fix:</b> one conversation that always asks the next most valuable question. You never see the size of the job, only the next small step and what it achieved.</p></div>
+    <div class="issue"><span class="n">2</span><h3>Too many doors</h3><p class="feel">“Where do I even start?”</p>
+      <p class="fix"><b>Fix:</b> the welcome page has four ways in, the sidebar 13 destinations, and the overview six areas, two checklists and a “10 things” badge. Cut it to three places: Today, My plan, For my family.</p></div>
+    <div class="issue"><span class="n">3</span><h3>It’s organised the way it’s built</h3><p class="feel">“Is the spare key under Home, Admin or Personal?”</p>
+      <p class="fix"><b>Fix:</b> people think in situations (“if I’m in hospital”, “if I die”) and people (“what Jo needs”). Organise around those. The categories can stay underneath, as filters.</p></div>
+    <div class="issue"><span class="n">4</span><h3>Typing is the bottleneck</h3><p class="feel">“I’m not typing out all my tablets. They’re in the kitchen.”</p>
+      <p class="fix"><b>Fix:</b> the information already exists: pill packets, the Medicare card, insurance renewals, bills, the cover page of the will, the switchboard. Let people snap it, say it or upload it. Claude fills in the fields, and the person confirms them.</p></div>
+    <div class="issue"><span class="n">5</span><h3>It asks before it gives</h3><p class="feel">“Five pages of questions and I still don’t have anything.”</p>
+      <p class="fix"><b>Fix:</b> ask one or two things, then show straight away what that unlocked (“Jo can now get into the house”). The Life Scan’s questions get spread through the conversation, each asked when it matters.</p></div>
+    <div class="issue"><span class="n">6</span><h3>Admin about the admin</h3><p class="feel">“Do I set this to ‘In motion’ or ‘Come back when ready’?”</p>
+      <p class="fix"><b>Fix:</b> work out area status from what’s been written. For bills, ask the person to confirm what was found instead of setting up categories first. Configuration should be the exception.</p></div>
+    <div class="issue"><span class="n">7</span><h3>Progress means nothing to a family</h3><p class="feel">“Is 56% good? Good for what?”</p>
+      <p class="fix"><b>Fix:</b> show readiness as outcomes for named people: “If you’re in hospital tonight, Jo can get in, keep the bills paid and talk to your GP. She can’t yet deal with the bank for you.”</p></div>
+    <div class="issue"><span class="n">8</span><h3>The family’s side is barely designed</h3><p class="feel">“Mum’s in ED. Where’s the thing she made?”</p>
+      <p class="fix"><b>Fix:</b> right now the moment the product pays off is a document. Make it an app for the family: what to do today, who’s doing what, and the ability to ask the plan a question.</p></div>
+    <div class="issue"><span class="n">9</span><h3>Voice is a footnote</h3><p class="feel">“I just want to hear Dad again.”</p>
+      <p class="fix"><b>Fix:</b> the most treasured thing families keep is a voice. Make spoken answers and voice notes part of the main experience, not something promised “in the full app”.</p></div>
+    <div class="issue"><span class="n">10</span><h3>It was built for a desk</h3><p class="feel">“I’m at the bedside with my phone.”</p>
+      <p class="fix"><b>Fix:</b> capture happens in the kitchen, in the garage and at the bedside. Design for the phone first, with big tap targets and one hand. Then let it grow into a desktop layout.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Direction</span><h2>Five shifts</h2></div>
+  <div class="shifts">
+    <div class="shift"><span class="from">Forms</span><span class="to">A conversation</span><span class="small muted">One question at a time, in plain words. It remembers what you said.</span></div>
+    <div class="shift"><span class="from">Typing</span><span class="to">Capturing</span><span class="small muted">Say it, snap it or upload it. Claude does the filing.</span></div>
+    <div class="shift"><span class="from">Categories</span><span class="to">Situations and people</span><span class="small muted">“If I’m in hospital”, “If I die”, “What Jo needs”.</span></div>
+    <div class="shift"><span class="from">Progress bars</span><span class="to">What your family can now do</span><span class="small muted">Readiness that means something.</span></div>
+    <div class="shift"><span class="from">A document</span><span class="to">A living family app</span><span class="small muted">It answers questions, assigns jobs and stays current.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Signature moments</span><h2>Where “where has this been all my life” happens</h2></div>
+
+  <div class="moment">
+    <div class="txt"><span class="tag">Home screen</span><h3>Today: one next step, and what it’s already bought you</h3>
+      <p>The home screen stops being a dashboard of areas. It shows two things. The first is readiness, phrased as what named people can now do. The second is the single most valuable next step, sized to the time you have (“2 minutes”).</p>
+      <p>The bar at the bottom is always there: <b>“Tell me anything…”</b> with a mic and a camera. Say “the spare key’s under the frog by the back door” at any moment, and it gets filed in the right place.</p>
+      <p class="small muted">Gaps are written as opportunities, never as failures. No badges, no streaks, no guilt.</p></div>
+    <div class="phone" aria-label="Sketch of the Today screen"><div class="scr">
+      <div class="bar"><span class="row"><span class="lampdot"></span>&nbsp;Alex’s plan</span><span>Aa</span></div>
+      <div class="body">
+        <span class="k">Good evening, Alex</span>
+        <h4>If you were in hospital tonight, Jo could…</h4>
+        <div class="card">
+          <div class="chk"><span class="ok">✓</span><span>Get into the house and feed Biscuit</span></div>
+          <div class="chk"><span class="ok">✓</span><span>Keep all 27 bills paid for 3 months</span></div>
+          <div class="chk"><span class="ok">✓</span><span>Tell the ED your medications</span></div>
+          <div class="chk"><span class="no">✗</span><span>Speak to the bank for you <span style="color:#6B6F88">(needs an Enduring Power of Attorney)</span></span></div>
+        </div>
+        <span class="k" style="margin-top:4px">Next · about 2 minutes</span>
+        <div class="card"><b style="font-size:14px">Who should be called first?</b><span style="color:#6B6F88">Jo is down as your main contact. Who’s next if she can’t be reached?</span><div class="row"><span class="btn p">Answer now</span><span class="btn">Not today</span></div></div>
+      </div>
+      <div>
+        <div class="compose"><span class="in">Tell me anything…</span><span class="ic" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1E2140" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2" fill="none"/><circle cx="12" cy="13.5" r="3.5" fill="none"/><path d="M8 7l2-3h4l2 3" fill="none"/></svg></span><span class="ic mic" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3" fill="none"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none"/></svg></span></div>
+        <div class="tabs"><b>Today</b><span>My plan</span><span>For my family</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="moment">
+    <div class="txt"><span class="tag">Capture</span><h3>Say it or snap it, then confirm “here’s what I heard”</h3>
+      <p>Claude asks a question in plain words. You answer however suits you: talk, type, or take a photo of the pill packets on the bench. Claude pulls out the facts and shows them on a single card, beside the photo they came from. Nothing is saved until you tap <b>Looks right</b>.</p>
+      <p>The same pattern handles the Medicare card (where it’s kept, plus the last 4 digits only), insurance renewals, a bill, the will’s cover page, and the 15-minute essentials as a whole. Ten minutes of chatting replaces fifty fields.</p></div>
+    <div class="phone" aria-label="Sketch of conversational capture with a confirmation card"><div class="scr">
+      <div class="bar"><span>‹ Today</span><span>Hospital tonight · 3 of 9</span></div>
+      <div class="body">
+        <p class="ask">What tablets do you take, and when? Talk me through them, or take a photo of the packets.</p>
+        <div class="say">🎙 “Atorvastatin, twenty mig at night. Ramipril five in the morning. Oh, and I’m allergic to penicillin.”</div>
+        <div class="card">
+          <span class="k">Here’s what I heard</span>
+          <div class="field"><span>Medication</span><span>Atorvastatin 20 mg, at night</span></div>
+          <div class="field"><span>Medication</span><span>Ramipril 5 mg, in the morning</span></div>
+          <div class="field"><span>Allergy</span><span><b>Penicillin</b></span></div>
+          <div class="src"><span class="thumb"></span>Also matched to your photo of the packets</div>
+          <div class="row"><span class="btn g">Looks right</span><span class="btn">Fix something</span></div>
+        </div>
+        <p style="color:#6B6F88;font-size:11.5px">This goes on the hospital summary and the wallet card.</p>
+      </div>
+      <div class="compose"><span class="in">Or type it…</span><span class="ic" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1E2140" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2" fill="none"/><circle cx="12" cy="13.5" r="3.5" fill="none"/></svg></span><span class="ic mic" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3" fill="none"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none"/></svg></span></div>
+    </div></div>
+  </div>
+
+  <div class="moment">
+    <div class="txt"><span class="tag">Bills</span><h3>Bills in a minute: one card per biller, three choices</h3>
+      <p>Drop in your statements and get one sentence back: <b>“27 things keep charging you, about $1,480 a month.”</b> Then go through them one card at a time. Each card shows the evidence (the last few charges), with three big choices: Cancel it, Keep paying it, Hand it to Jo.</p>
+      <p>Categories, splitting PayPal and research all still happen, but out of sight. They sit under “Fine-tune” for people who want them. Today’s four-step flow becomes something you can finish in one sitting.</p></div>
+    <div class="phone" aria-label="Sketch of one-card-at-a-time bill triage"><div class="scr">
+      <div class="bar"><span>‹ Bills</span><span>8 of 27</span></div>
+      <div class="body">
+        <div class="meter"><i style="width:30%"></i></div>
+        <div class="swipe"><div class="back"></div><div class="card">
+          <div class="row" style="justify-content:space-between"><b style="font-size:16px;font-family:var(--display)">Shannons</b><span class="pill">Car insurance</span></div>
+          <span style="font-size:20px;font-family:var(--display)">$96.40 <span style="font-size:12px;color:#6B6F88">a month</span></span>
+          <div class="tx"><span>28 Oct · Amex</span><span>$96.40</span></div>
+          <div class="tx"><span>28 Sep · Amex</span><span>$96.40</span></div>
+          <div class="tx"><span>28 Aug · Amex</span><span>$96.40</span></div>
+          <span style="font-size:11.5px;color:#6B6F88">Covers the Ranger. Renews 1 Feb.</span>
+        </div></div>
+        <span class="k">When you’re gone, this should…</span>
+        <div class="acts"><span class="btn">Cancel it</span><span class="btn">Keep paying</span><span class="btn p">Hand to Jo</span></div>
+        <div class="row" style="justify-content:space-between;color:#6B6F88;font-size:11.5px"><span>Not a bill</span><span>Fine-tune ›</span></div>
+      </div>
+      <div class="tabs"><span>Today</span><b>My plan</b><span>For my family</span></div>
+    </div></div>
+  </div>
+
+  <div class="moment">
+    <div class="txt"><span class="tag">For the family</span><h3>The family view: the first 48 hours, and the ability to ask the plan</h3>
+      <p>When the plan is released (or the hospital summary is shared), the family gets an app, not a PDF. It shows what to do today, this week and later. Tasks can be given to people (“Sam: ring the bank”). And there’s one box: <b>Ask Dad’s plan.</b></p>
+      <p>“Where’s the spare key?” brings back the answer in his words, with when he wrote it. This is the moment people tell their friends about, and it’s what sells the product to the next family.</p></div>
+    <div class="phone" aria-label="Sketch of the family view"><div class="scr">
+      <div class="bar"><span class="row"><span class="lampdot"></span>&nbsp;Alex’s plan, for Jo</span><span>Aa</span></div>
+      <div class="body">
+        <h4>Today</h4>
+        <div class="card">
+          <div class="chk"><span class="ok">✓</span><span>Show the ED the hospital summary</span></div>
+          <div class="chk"><span>○</span><span>Ring Sam. He’s the backup contact <span style="color:#6B6F88">· 0400 000 102</span></span></div>
+          <div class="chk"><span>○</span><span>Feed Biscuit. Rachel next door has a key</span></div>
+        </div>
+        <span class="k">Ask Alex’s plan</span>
+        <div class="say">Where’s the spare key?</div>
+        <div class="ans"><span>“Under the frog by the back door. If it’s gone, Rachel and Dev at number 14 have one.”</span><span style="color:#6B6F88;font-size:11px">Alex wrote this in March 2026 · Home › Getting in</span></div>
+      </div>
+      <div class="compose"><span class="in">Ask anything about the plan…</span><span class="ic mic" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3" fill="none"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none"/></svg></span></div>
+    </div></div>
+  </div>
+
+  <div class="moments-list">
+    <div class="mini"><h3>Your voice, kept</h3><p class="small muted">Record a 60-second hello next to each letter (“for Tom’s 18th”). Answer “What always made you laugh?” out loud. Families keep the recording and get a transcript as well.</p></div>
+    <div class="mini"><h3>Walk me round the house</h3><p class="small muted">A guided walk with the camera. At each stop, take a photo and say one sentence: the water main, the switchboard, the solar reset, the bins, the spare key. The result is an illustrated household manual.</p></div>
+    <div class="mini"><h3>Sunday afternoon mode</h3><p class="small muted">For doing it with a parent: two people, one phone. The adult child reads each question aloud and the parent answers in their own voice. Big type, easy to pause, consent built in.</p></div>
+    <div class="mini"><h3>Ask someone</h3><p class="small muted">Send one question to a family member: “Sam, where are the boat rego papers?” Their answer comes back for you to approve before it goes into the plan.</p></div>
+    <div class="mini"><h3>It keeps itself current</h3><p class="small muted">Upload statements again each quarter: “3 things changed. Kayo is new, AGL has stopped, Shannons went up 6%.” Life events (a new grandchild, a car sold) prompt a 2-minute update.</p></div>
+    <div class="mini"><h3>Hospital card on the lock screen</h3><p class="small muted">Medications, allergies and who to call, as a wallet card and a lock-screen image. One tap to show the ED nurse.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Design and layout</span><h2>The whole frame, not just the flows</h2>
+    <p class="muted" style="margin-top:8px">Today’s layout is a left sidebar with 13 destinations, area pages with clouds of topic chips, and long forms. The proposed frame has three places, one constant way to talk to it, and the plan taking shape alongside.</p></div>
+  <div class="layout" role="img" aria-label="Proposed desktop layout: a top bar with three places, a central conversation column with a composer bar at the bottom, and a right-hand panel showing the plan taking shape">
+    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" font-family="Figtree, system-ui, sans-serif">
+      <rect x="1" y="1" width="718" height="358" rx="14" fill="var(--bg)" stroke="var(--line)"/>
+      <rect x="1" y="1" width="718" height="40" rx="14" fill="var(--paper)" stroke="var(--line)"/>
+      <circle cx="26" cy="21" r="6" fill="var(--lamp)"/><text x="40" y="25" font-size="12" fill="var(--ink)" font-family="Newsreader, Georgia, serif">After Me, For You</text>
+      <text x="270" y="25" font-size="12" fill="var(--ink)" font-weight="600">Today</text><text x="330" y="25" font-size="12" fill="var(--muted)">My plan</text><text x="398" y="25" font-size="12" fill="var(--muted)">For my family</text>
+      <text x="640" y="25" font-size="11" fill="var(--muted)">Alex · Aa</text>
+      <rect x="40" y="62" width="400" height="230" rx="10" fill="var(--paper)" stroke="var(--line)"/>
+      <text x="58" y="88" font-size="10" fill="var(--lamp-ink)" font-weight="600" letter-spacing="1">CONVERSATION</text>
+      <text x="58" y="112" font-size="15" fill="var(--ink)" font-family="Newsreader, Georgia, serif">What tablets do you take, and when?</text>
+      <rect x="230" y="128" width="190" height="34" rx="10" fill="var(--dusk)"/><text x="244" y="149" font-size="11" fill="var(--dusk-ink)">🎙 “Atorvastatin at night…”</text>
+      <rect x="58" y="176" width="300" height="96" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+      <text x="72" y="198" font-size="10" fill="var(--lamp-ink)" font-weight="600" letter-spacing="1">HERE’S WHAT I HEARD</text>
+      <text x="72" y="220" font-size="11" fill="var(--ink)">Atorvastatin 20 mg · night</text><text x="72" y="238" font-size="11" fill="var(--ink)">Allergy: penicillin</text>
+      <rect x="72" y="248" width="76" height="18" rx="9" fill="var(--calm)"/><text x="82" y="261" font-size="10" fill="#fff" font-weight="600">Looks right</text>
+      <rect x="40" y="304" width="400" height="38" rx="19" fill="var(--paper)" stroke="var(--line)"/>
+      <text x="60" y="327" font-size="12" fill="var(--faint)">Tell me anything…</text>
+      <circle cx="390" cy="323" r="12" fill="var(--bg)" stroke="var(--line)"/><circle cx="420" cy="323" r="12" fill="var(--lamp)"/>
+      <rect x="462" y="62" width="230" height="280" rx="10" fill="var(--paper)" stroke="var(--line)"/>
+      <text x="480" y="88" font-size="10" fill="var(--lamp-ink)" font-weight="600" letter-spacing="1">YOUR PLAN, TAKING SHAPE</text>
+      <text x="480" y="114" font-size="12" fill="var(--ink)" font-weight="600">If I’m in hospital</text>
+      <text x="480" y="134" font-size="11" fill="var(--muted)">✓ Who to call</text><text x="480" y="152" font-size="11" fill="var(--calm)" font-weight="600">✓ Medications  ← just added</text><text x="480" y="170" font-size="11" fill="var(--muted)">○ Someone to act for you</text>
+      <text x="480" y="198" font-size="12" fill="var(--ink)" font-weight="600">If I die</text>
+      <text x="480" y="218" font-size="11" fill="var(--muted)">✓ Where the will is</text><text x="480" y="236" font-size="11" fill="var(--muted)">○ Burial or cremation</text>
+      <text x="480" y="264" font-size="12" fill="var(--ink)" font-weight="600">Running the house</text>
+      <text x="480" y="284" font-size="11" fill="var(--muted)">✓ 27 bills, decided</text><text x="480" y="302" font-size="11" fill="var(--muted)">○ The switchboard</text>
+      <text x="480" y="328" font-size="10" fill="var(--faint)">On a phone, this becomes a sheet you pull up.</text>
+    </svg>
+  </div>
+  <div class="principles">
+    <div><h3>Three places, not thirteen</h3><p><b>Today</b> (talk, next step, readiness), <b>My plan</b> (everything written, grouped by situation) and <b>For my family</b> (preview what they’ll see, plus release). On a phone these are tabs along the bottom. Settings, the vault and Release sit under your name.</p></div>
+    <div><h3>The bar is always there</h3><p>“Tell me anything…”, with a mic and a camera, sits at the bottom of every screen. It removes the question “where does this go?” for good.</p></div>
+    <div><h3>The plan takes shape beside you</h3><p>On desktop, a right-hand panel shows each fact land in its place as you talk. That’s how a conversation still feels like progress. On a phone, it becomes a sheet you pull up.</p></div>
+    <div><h3>One main action per screen</h3><p>Today shows one next step, not ten suggestions. “Strengthen my plan” becomes the source of that next step instead of a badge counting up.</p></div>
+    <div><h3>Cards are only for decisions</h3><p>Confirmations and choices get cards. Everything else is calm text on the page, so the thing that needs you always stands out.</p></div>
+    <div><h3>Daylight by default, dusk at night</h3><p>The deep navy is beautiful, but in daylight it reads as late-night and heavy, especially to a 75-year-old. Make a warm light theme the default and keep the dusk palette as the dark theme. Keep the lamp as the one brand flourish, glowing a little brighter as readiness grows.</p></div>
+    <div><h3>Bigger text, fewer words</h3><p>18px body text, a one-tap text-size control (“Aa”), 44px tap targets, and plain labels. “In motion” and “Continuity Check” become “Started” and “How ready are you?”.</p></div>
+    <div><h3>Pace the emotion</h3><p>Start with the practical (hospital tonight) and earn the right to ask about death. Every heavy question has “Not today”, and the app honours it without nagging.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Feasibility</span><h2>What the prototype can do now, and what needs the real app</h2></div>
+  <div class="split">
+    <div class="box"><h3>Buildable now, in this prototype</h3><ul class="plain now small">
+      <li>The new frame: Today, My plan and For my family, the bottom bar and a daylight theme. All existing data carries over.</li>
+      <li>The conversation, with “Here’s what I heard” cards, using your Claude account to pull facts out of what you type or say.</li>
+      <li>Photos read by Claude: pill packets, cards, bills, renewal letters. This already works for bills. On a phone, the photo button opens the camera.</li>
+      <li>Speaking instead of typing, via the phone keyboard’s own microphone key.</li>
+      <li>Bills one card at a time, with the current detail kept under Fine-tune.</li>
+      <li>A preview of the family view, including Ask the plan.</li>
+    </ul></div>
+    <div class="box"><h3>Needs the production app</h3><ul class="plain later small">
+      <li>Recording voice and video inside the page (the prototype’s frame blocks the microphone and camera).</li>
+      <li>Keeping voice notes as keepsakes, and private speech-to-text.</li>
+      <li>Sending questions to family members, and their answers coming back.</li>
+      <li>Releasing the plan, with identity checks for whoever requests it.</li>
+      <li>Reminders, notifications and the lock-screen card.</li>
+      <li>Encrypted sync across devices and family members.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Recommendation</span><h2>Build order</h2></div>
+  <ol class="order col">
+    <li><b>The new frame and Today.</b><span class="muted small">Three places, the bottom bar, readiness written as outcomes, one next step and a daylight theme. It changes how everything feels without losing any data.</span></li>
+    <li><b>Say it or snap it.</b><span class="muted small">The conversation with “Here’s what I heard” cards, starting with the 15-minute essentials. This is the flagship.</span></li>
+    <li><b>The family view with Ask the plan.</b><span class="muted small">The payoff moment. It also tests how good the writing in the plan is.</span></li>
+    <li><b>Bills in a minute.</b><span class="muted small">One card at a time, with the current four steps moved under Fine-tune.</span></li>
+    <li><b>Walk me round the house, and Sunday afternoon mode.</b><span class="muted small">Then hand voice keepsakes and Ask someone to the production build.</span></li>
+  </ol>
+</section>
+
+<section>
+  <div class="col"><span class="eyebrow">Design for the risks</span><h2>What could go wrong, and the guard for each</h2></div>
+  <ul class="plain col">
+    <li><b>Claude mishears or misreads.</b> Nothing is saved without a confirmation card, and the source photo or quote is shown beside what was pulled out.</li>
+    <li><b>Privacy.</b> Show what will be sent to Claude before sending it. Never send the vault. Mask numbers to the last 4 digits before anything leaves the device, where possible.</li>
+    <li><b>Losing authorship.</b> Claude asks and files. For letters and life story it never writes in the person’s voice. The words stay theirs.</li>
+    <li><b>Older users.</b> Voice-first must never be voice-only. Everything also works by typing, at a large text size.</li>
+    <li><b>Emotional load.</b> Pausing is easy, nothing counts down, and there are no streaks or guilt badges. Readiness only ever goes up.</li>
+  </ul>
+  <p class="quote col">The test for every screen: would a tired daughter at 2am, or a 78-year-old on a Sunday afternoon, know exactly what to do next?</p>
+</section>
+
+<footer class="col">Based on a walkthrough of the AMFY prototype (version 21): the welcome page, Life Scan, overview, Money, Personal, Bills, and Letters and words.</footer>
+</div>

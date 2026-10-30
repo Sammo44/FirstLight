@@ -1,0 +1,21 @@
+window.addEventListener('error',e=>document.body.setAttribute('data-err',(document.body.getAttribute('data-err')||'')+e.message+' @'+e.lineno+'; '));
+setTimeout(async()=>{const r=[];window.__r=r;try{const q=s=>document.querySelector(s),all=s=>Array.from(document.querySelectorAll(s)),click=e=>e&&e.dispatchEvent(new MouseEvent('click',{bubbles:true})),wait=ms=>new Promise(res=>setTimeout(res,ms));
+const setv=(el,v)=>{el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));};
+click(q('[data-act=example]'));await wait(50);click(q('.places [data-v=family]'));await wait(30);
+r.push('family rows='+all('.famrow').map(b=>b.querySelector('h3').textContent).join(' | '));
+click(q('.famrow.feature'));await wait(40);
+r.push('head='+q('.fvhead h1').textContent+' | as='+all('[data-act=fvwho]').map(b=>b.textContent+(b.classList.contains('on')?'*':'')).join(','));
+r.push('hosp card='+all('.hospcard dt').map(x=>x.textContent).join(','));
+const tasks=()=>all('.fwhen').map(h=>h.textContent+': '+Array.from(h.parentElement.querySelectorAll('.ftask')).map(t=>t.querySelector('strong').textContent+' ['+((t.querySelector('.who')||{}).textContent||'-')+']').join('; ')).join('\n   ');
+r.push('UNWELL\n   '+tasks());
+click(q('[data-act=fvtick]'));await wait(20);r.push('ticked: '+(q('.ftask.done strong')||{}).textContent+' | count='+q('.famview .row.between .small').textContent);
+click(q('[data-act=fvsit][data-v=die]'));await wait(30);r.push('DIE head='+q('.fvhead h1').textContent+'\n   '+tasks());
+click(all('[data-act=fvwho]').find(b=>/Sam/.test(b.textContent)));await wait(20);click(q('[data-act=fvmine]'));await wait(20);r.push('SAM just mine\n   '+tasks());
+// ask (no Claude: local search)
+click(all('[data-act=fvsugg]')[0]);await wait(50);r.push('Q1 '+all('.askthread > *').map(x=>x.innerText.replace(/\n+/g,' / ')).join(' || '));
+setv(q('#ask_text'),'what pills does he take');click(q('[data-act=fvask]'));await wait(50);
+r.push('Q2 '+all('.askthread .ans').pop().innerText.replace(/\n+/g,' / '));
+setv(q('#ask_text'),'what is the wifi password');click(q('[data-act=fvask]'));await wait(50);
+r.push('Q3 '+all('.askthread .ans').pop().innerText.replace(/\n+/g,' / '));
+const facts=window.__pf;r.push('vault/private leak='+/vault|Anyone who shouldn/i.test(document.body.innerText.slice(0,0)));
+document.body.setAttribute('data-r',r.join('\n'));}catch(e){document.body.setAttribute('data-r',r.join('\n')+'\nERR '+e.message+' '+e.stack)}},400);
