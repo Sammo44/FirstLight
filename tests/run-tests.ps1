@@ -18,7 +18,8 @@ function Run-Page($name, $before, $after, $attr, $budget) {
   $page = Join-Path $out "$name.html"
   [IO.File]::WriteAllText($page, $before + $app + $after, $utf8)
   $profile = Join-Path $out "profile-$name"
-  if (Test-Path $profile) { Remove-Item -Recurse -Force $profile -Confirm:$false }
+  # Edge profiles have paths longer than Windows' usual limit, so remove them with the long-path prefix.
+  if (Test-Path $profile) { cmd /c "rd /s /q ""\\?\$profile""" 2>$null | Out-Null }
   $url = "file:///" + ($page -replace '\\', '/')
   $dom = & $edge --headless=new --disable-gpu --user-data-dir="$profile" --allow-file-access-from-files --virtual-time-budget=$budget --dump-dom $url 2>$null | Out-String
   if ($dom -match "$attr=""([^""]*)""") { return [Net.WebUtility]::HtmlDecode($matches[1]) }
