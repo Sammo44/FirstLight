@@ -50,7 +50,8 @@ $suites = @(@('regression','', "<script src='harness2.js'></script>", 'data-test
             @('family', '', "<script src='fam.js'></script>", 'data-r'),
             @('walk', '', "<script src='walk.js'></script>", 'data-r'),
             @('people', '', "<script src='people.js'></script>", 'data-r'),
-            @('legacy', "<script src='legacy.js'></script>", '', 'data-r'))
+            @('legacy', "<script src='legacy.js'></script>", '', 'data-r'),
+            @('ux', '', "<script src='ux.js'></script>", 'data-r'))
 if (Test-Path $fixture) { $suites += ,@('bills', '', "<script src='statements.js'></script><script src='bq.js'></script>", 'data-r') }
 else { "bills          skipped: add tests/fixtures/statements.js to run it" }
 if ($Only) { $suites = @($suites | Where-Object { $Only -contains $_[0] }) }

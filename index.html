@@ -13,19 +13,19 @@
 /* FirstLight. Layout: three places (Today, My plan, For my family), one guided card or conversation at a time.
    Palette "Clear morning": night teal moving into morning cream, with amber at the horizon. */
 :root{
-  --bg:#F3F6F2; --surface:#FBFAF4; --raised:#FFFFFF; --ink:#17363F; --muted:#466066; --faint:#748B90;
+  --bg:#F3F6F2; --surface:#FBFAF4; --raised:#FFFFFF; --ink:#17363F; --muted:#466066; --faint:#5A7074;
   --line:#D6E2DD; --lamp:#F4A340; --lamp-ink:#8A520B; --lamp-soft:#FCEBCB; --dusk:#DCEDEA; --dusk-ink:#1E4E5A;
   --calm:#2F7A64; --calm-soft:#DCEFE6; --focus:#2E6E78; --shadow:0 1px 2px rgba(23,54,63,.06),0 6px 24px rgba(23,54,63,.07);
   --night:#1E3E52; --night-2:#2E6E78; --sea:#6FAAAA; --mint:#CFE5DE; --morning:#FFF8E8; --glow:#FCD58E;
   --display:"Newsreader","Iowan Old Style",Georgia,serif; --body:"Figtree","Segoe UI",system-ui,sans-serif; --r:10px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0E2630; --surface:#122E39; --raised:#173744; --ink:#EAF3F0; --muted:#A9C3C2; --faint:#7E9A9C;
+  --bg:#0E2630; --surface:#122E39; --raised:#173744; --ink:#EAF3F0; --muted:#A9C3C2; --faint:#8FAAAC;
   --line:#244B57; --lamp:#F4B04A; --lamp-ink:#FCD58E; --lamp-soft:#3A3122; --dusk:#1E4652; --dusk-ink:#CBE6DC;
   --calm:#7FCBB4; --calm-soft:#163A33; --focus:#FCD58E; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.25);
   --night:#0B1F28; --night-2:#1E3E52; --sea:#2E6E78; --mint:#1E4652; --morning:#173744; --glow:#FCD58E; color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#0E2630; --surface:#122E39; --raised:#173744; --ink:#EAF3F0; --muted:#A9C3C2; --faint:#7E9A9C;
+  --bg:#0E2630; --surface:#122E39; --raised:#173744; --ink:#EAF3F0; --muted:#A9C3C2; --faint:#8FAAAC;
   --line:#244B57; --lamp:#F4B04A; --lamp-ink:#FCD58E; --lamp-soft:#3A3122; --dusk:#1E4652; --dusk-ink:#CBE6DC;
   --calm:#7FCBB4; --calm-soft:#163A33; --focus:#FCD58E; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.25);
   --night:#0B1F28; --night-2:#1E3E52; --sea:#2E6E78; --mint:#1E4652; --morning:#173744; --glow:#FCD58E; color-scheme:dark }
@@ -74,7 +74,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 .pop{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(100% + 6px);background:var(--raised);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px;display:grid;gap:12px;z-index:12;width:min(320px,calc(100vw - 24px))}
 .pop .label{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
 .pop .menu{display:grid;gap:2px}
-.pop .menu button{background:none;border:0;text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:.95rem}
+.pop .menu button,.pop .menu label{display:block;width:100%;background:none;border:0;text-align:left;padding:11px 10px;border-radius:8px;cursor:pointer;font-size:.95rem;font-weight:400;color:var(--ink)}
+.pop .menu label:hover{background:var(--bg)}
 .pop .menu button:hover{background:var(--bg)}
 /* Phones: the three places become a labelled row at the top, and the name button becomes "Menu" (with text size and look inside). */
 @media (max-width:760px){
@@ -97,7 +98,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .readiness{gap:14px}
 .readiness h2{font-size:clamp(1.25rem,2.8vw,1.5rem)}
 .seg{display:inline-flex;background:var(--bg);border-radius:999px;padding:3px;gap:2px}
-.seg button{border:0;background:none;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.9rem;color:var(--muted);font-weight:500}
+.seg button{border:0;background:none;border-radius:999px;padding:9px 14px;min-height:44px;cursor:pointer;font-size:.92rem;color:var(--muted);font-weight:500}
 .seg button.on{background:var(--raised);color:var(--ink);box-shadow:var(--shadow)}
 .lampcount{display:inline-flex;align-items:center;gap:8px}
 .lampcount .mark{width:16px;height:16px}
@@ -263,7 +264,7 @@ main{min-width:0;padding-block:32px 80px;padding-left:max(16px,env(safe-area-ins
 .btn.primary:hover{opacity:.92}
 .btn.ghost{background:none;border-color:transparent;color:var(--muted)}
 .btn.ghost:hover{color:var(--ink);border-color:var(--line)}
-.btn.sm{padding:6px 12px;font-size:.85rem}
+.btn.sm{padding:8px 14px;font-size:.88rem;min-height:44px}
 .btn[disabled]{opacity:.5;cursor:default}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .row.between{justify-content:space-between}
@@ -284,7 +285,7 @@ textarea{resize:vertical;min-height:96px;line-height:1.55}
 textarea.letter{min-height:280px;font-family:var(--display);font-size:1.12rem;line-height:1.6;background:var(--raised)}
 input:focus,textarea:focus,select:focus{border-color:var(--lamp);outline:none;box-shadow:0 0 0 3px var(--lamp-soft)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.92rem;line-height:1.3;text-align:left}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 15px;min-height:44px;cursor:pointer;font-size:.94rem;line-height:1.3;text-align:left}
 .chip:hover{border-color:var(--faint)}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .chip.add{border-style:dashed;color:var(--muted);background:none}
@@ -303,12 +304,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--lamp);outline:none;bo
 .prow .pname{flex:1;min-width:0;font-weight:500;color:var(--calm);overflow-wrap:anywhere}
 .ppct{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600}
 .ppct input{width:68px;text-align:right;padding:6px 8px}
-.prow .px{flex:none;border:0;background:none;color:var(--calm);cursor:pointer;width:34px;height:34px;border-radius:50%;font-size:1.15rem;line-height:1}
+.prow .px{flex:none;border:0;background:none;color:var(--calm);cursor:pointer;width:44px;height:44px;border-radius:50%;font-size:1.15rem;line-height:1}
 .prow .px:hover{background:var(--raised)}
 .ptotal{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pok{color:var(--calm);font-weight:600}
 .pwarn{color:var(--lamp-ink);font-weight:600}
 .role-add.pf-add{grid-template-columns:minmax(0,1fr) auto}
+.linkbtn{background:none;border:0;padding:0;color:var(--focus);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font:inherit}
 
 .assist:empty{display:none}
 .assist{display:flex;flex-direction:column;gap:8px}
@@ -432,8 +434,22 @@ table.txt td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 
 .topics{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tgroup{flex-basis:100%;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-top:6px}
-.topic{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px 5px 9px;font-size:.85rem;cursor:pointer}
+.topic{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px 8px 11px;min-height:44px;font-size:.9rem;cursor:pointer}
 .topic.on{border-color:var(--ink);background:var(--raised);font-weight:600}
+.topicsel{display:none}
+/* Wide screens: progress on the left, the task on the right. */
+.chapside,.tg-next{display:flex;flex-direction:column;gap:24px;min-width:0}
+.today-grid{display:flex;flex-direction:column;gap:24px}
+@media (min-width:1100px){
+  .wrap.chapterwrap{max-width:1180px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}
+  .chapside{position:sticky;top:84px;max-height:calc(100vh - 100px);overflow:auto;padding-bottom:8px}
+  .chapside .topics{flex-direction:column;align-items:stretch;flex-wrap:nowrap}
+  .chapside .topic{justify-content:flex-start;text-align:left}
+  .wrap.today{max-width:1120px}
+  .today-grid{display:grid;grid-template-columns:400px minmax(0,1fr);grid-template-areas:"ready next" "ready tell" "ready ways" "ready .";column-gap:32px;row-gap:24px;align-items:start}
+  .tg-ready{grid-area:ready;position:sticky;top:84px} .tg-next{grid-area:next} .tg-tell{grid-area:tell} .tg-ways{grid-area:ways;min-width:0}
+}
+@media (max-width:600px){ .topics{display:none} .topicsel{display:grid;gap:4px} .topicsel select{font-weight:600;min-height:48px} }
 .topic .dot{width:7px;height:7px}
 .stepfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
 .status-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -484,6 +500,31 @@ table.txt td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .promise .panel p{color:var(--muted);font-size:.94rem}
 .parentband{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--dusk);color:var(--dusk-ink);border-radius:14px;padding:18px 20px}
 .parentband h3{font-size:1.2rem}
+/* Welcome, v2: the keyhole mark as hero art, one main and one second button, the parent route up top, and a preview of the app. */
+.hero .eyebrow,.hero h1{text-wrap:balance}
+.hero-night .wrap,.hero-day .wrap{max-width:1000px}
+.hero-night .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:32px}
+.heromark{width:150px;height:150px;filter:drop-shadow(0 0 46px rgba(244,163,64,.5))}
+.herogrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:44px;align-items:start}
+.herocopy{gap:16px}
+.ctas .btn{min-height:50px;padding:12px 22px;font-size:1rem}
+.parentcta{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--dusk);color:var(--dusk-ink);border-radius:14px;padding:14px 16px}
+.parentcta div{display:grid;gap:2px;min-width:0;flex:1 1 220px}
+.mock{width:290px;border:9px solid var(--night);border-radius:30px;background:var(--bg);box-shadow:0 18px 40px rgba(14,38,48,.22);padding:12px 10px 16px;display:grid;gap:10px;font-size:.78rem;color:var(--ink);margin-top:-36px}
+.mock-top{display:flex;align-items:center;gap:6px}.mock-top .mark{width:18px;height:18px}.mock-top b{font-family:var(--display);font-weight:500;font-size:.95rem}
+.mock-menu{margin-left:auto;border:1px solid var(--line);border-radius:99px;padding:2px 8px;font-size:.7rem}
+.mock-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.mock-tabs span{flex:1;text-align:center;padding:4px 2px;border-radius:7px;color:var(--muted);font-weight:600;font-size:.68rem;white-space:nowrap}
+.mock-tabs .on{background:var(--raised);color:var(--ink);box-shadow:0 1px 2px rgba(14,38,48,.14)}
+.mock-card{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:6px}
+.mock-card.soft{background:var(--surface)}
+.mock-eye{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mock-h{font-family:var(--display);font-size:1rem;line-height:1.2}
+.mock-row{display:flex;align-items:center;gap:7px}.mock-row i{font-style:normal;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:.6rem;flex:none;background:var(--bg)}
+.mock-row.yes i{background:var(--calm-soft);color:var(--calm)}
+.mock-row.no{color:var(--muted)}.mock-row span{margin-left:auto;color:var(--lamp-ink);font-weight:600}
+@media (max-width:860px){ .herogrid{grid-template-columns:1fr;gap:28px} .mock{justify-self:center;margin-top:0} }
+@media (max-width:600px){ .hero-night .wrap{grid-template-columns:1fr;gap:14px} .heromark{width:72px;height:72px;order:-1} .hero-night{padding-block:36px 4px} .hero-dawn{height:70px} .ctas .btn{flex:1 1 100%} }
 
 .score{display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums}
 .score strong{font-family:var(--display);font-size:4.2rem;font-weight:400;line-height:1;color:var(--lamp-ink)}
@@ -505,8 +546,10 @@ table.txt td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .stage{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px}
 .stage .num{width:36px;height:36px;border-radius:50%;background:var(--lamp-soft);color:var(--lamp-ink);display:grid;place-items:center;font-family:var(--display);font-size:1.2rem}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;cursor:pointer;color:var(--muted);font-weight:500}
+/* Tabs stay on one line and scroll sideways on narrow screens. */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;white-space:nowrap;scroll-snap-align:start;background:none;border:0;border-bottom:2px solid transparent;padding:12px 12px;min-height:46px;cursor:pointer;color:var(--muted);font-weight:500}
 .tabs button.on{color:var(--ink);border-bottom-color:var(--lamp)}
 .doc{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:clamp(20px,5vw,56px);box-shadow:var(--shadow);font-size:.98rem;min-width:0}
 .doc h1{font-size:2rem;margin-bottom:6px}
@@ -516,6 +559,9 @@ table.txt td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .doc .lead{color:var(--muted);font-style:italic;font-family:var(--display);font-size:1.1rem}
 .doc .warn{background:var(--lamp-soft);color:var(--lamp-ink);padding:10px 12px;border-radius:8px;margin:8px 0}
 .doc .none{color:var(--faint);font-style:italic}
+.addlink{font:inherit;font-style:normal;font-weight:600;background:var(--lamp-soft);color:var(--lamp-ink);border:0;border-radius:999px;padding:4px 12px;margin-left:6px;cursor:pointer;min-height:32px}
+.addlink:hover{background:var(--lamp);color:#fff}
+@media print{.addlink{display:none}}
 .doc table{border-collapse:collapse;width:100%;font-size:.92rem}
 .doc th,.doc td{text-align:left;border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
 .doc td.blank{height:44px;border-bottom:1px solid var(--faint);min-width:180px}
@@ -565,7 +611,7 @@ let S = blank();
 const ui = {view:"welcome", chapter:null, step:0, open:null, confirmDel:null, navOpen:false, scanPage:0, wtab:"letters", otab:"hospital", lguide:{}, wq:{}, wmode:{}, follow:{},
   sugOpen:null, fuHide:new Set(), confirmReset:false, ess:null, checkDone:false,
   find:{state:"idle", items:[], msg:"", src:""}, photo:null, pasteText:"", ai:{ok:false, images:false}, openDet:{}, billStep:null, txOpen:new Set(), moreTypes:new Set(),
-  bFile:new Set(), bMore:new Set(), bCat:{}};
+  bFile:new Set(), bMore:new Set(), bCat:{}, allOpts:new Set(), entryMore:new Set(), scanMore:false, restore:null};
 
 /* ================= country ================= */
 const AU_STATES = [["NSW","NSW"],["VIC","VIC"],["QLD","QLD"],["WA","WA"],["SA","SA"],["TAS","TAS"],["ACT","ACT"],["NT","NT"]];
@@ -725,6 +771,24 @@ const SCAN = [
     {k:"phone", q:"Phone", opts:[["iphone","iPhone"],["android","Android"],["other","Other"]]},
     {k:"faithTiming", q:"Does faith or culture call for anything specific after death?", help:"For example, burial within 24 to 48 hours, or particular rites.", opts:[["yes","Yes"],["no","No"],["later","Add this later"]]}]}
 ];
+// The Life Scan is two short pages. The rest are optional, under "Tailor your plan" in My plan.
+const SQ = Object.fromEntries(SCAN.flatMap(g => g.qs).map(q => [q.k, q]));
+const scanPick = ks => ks.map(k => SQ[k]).filter(Boolean);
+const SCAN_CORE = [
+  {title:"You and the people who rely on you", qs:scanPick(["care","consent","partner","kids","depends","pets"])},
+  {title:"Home, money and the legal basics", qs:scanPick(["home","vehicles","retire","work","will","epoa"])}];
+const SCAN_MORE = [
+  {title:"More about home and family", qs:scanPick(["blended","alone","property","places","firearms","admin"])},
+  {title:"More about money", qs:scanPick(["cover","invest","gov","owed","guarantor"])},
+  {title:"Legal and digital", qs:scanPick(["since","acd","structures","digital","phone","faithTiming"])}];
+const moreLeft = () => SCAN_MORE.flatMap(g => g.qs).filter(q => (!q.show || q.show()) && !filled(S.scan[q.k])).length;
+// The check's gaps decide which essentials come first ("no" before "partly"). Your people always come first.
+const CHECK_TOPIC = {accounts:"accounts", bills:"bills", docs:"will", meds:"meds", epoa:"act", house:"house", wishes:"body"};
+function capOrder(){
+  const rank = x => { if (x.id === "people") return -1; const ck = Object.keys(CHECK_TOPIC).find(k => CHECK_TOPIC[k] === x.id), a = ck && (S.check || {})[ck];
+    return a === "no" ? 0 : a === "partly" ? 1 : 2; };
+  return CAP.map((x, i) => [x, i]).sort((p, q) => rank(p[0]) - rank(q[0]) || p[1] - q[1]).map(p => p[0]);
+}
 function F(){
   const s = S.scan, has = (k,v) => Array.isArray(s[k]) && s[k].includes(v);
   return {
@@ -803,7 +867,9 @@ const costsTotal = () => S.reg.costs.reduce((s,x) => s + perMonth(x), 0);
 
 const REG = {
   people:{noun:"person", title:x => x.name, sub:x => [x.rel, (x.roles || []).filter(q => q !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · "),
-    fields:() => [t("name","Name"), t("rel","Relationship or role",{ph:"e.g. Sister, Lawyer, Neighbour"}), t("phone","Phone"), t("email","Email"), m("roles","Roles",ROLES), a("notes","Notes",{smart:true})]},
+    fields:() => [t("name","Name"), t("rel","Relationship or role",{ph:"e.g. Sister, Lawyer, Neighbour"}), t("phone","Phone"),
+      m("roles","Roles (optional)",ROLES,{top:["executor","attorney","health","notify_first","key_holder"], moreLabel:"roles", help:"What would you trust them with? You can add roles later, too."}),
+      t("email","Email",{more:true}), a("notes","Notes",{smart:true, more:true})]},
   accounts:{noun:"account", title:x => x.inst, sub:x => [x.type, x.type !== "Credit card" && x.bsb && "BSB " + x.bsb, acctTail(x) && "••" + acctTail(x), x.owner === "Joint" ? "Joint" + (filled(x.jointWith) ? " with " + whoText(x.jointWith) : "") : x.owner].filter(Boolean).join(" · "),
     presets:() => (L().nz ? ["ANZ","ASB","BNZ","Westpac","Kiwibank","Co-operative Bank","TSB","Rabobank"] : ["Commonwealth Bank","Westpac","NAB","ANZ","ING","Macquarie","Bendigo Bank","Suncorp","Up"]).map(n => ({label:n, data:{inst:n}})),
     fields:() => [t("inst","Bank or provider"), c("type","Type",[["Everyday","Everyday"],["Savings","Savings"],["Offset","Offset"],["Term deposit","Term deposit"],["Credit card","Credit card"],["Business","Business"]]),
@@ -1886,22 +1952,24 @@ function inputHTML(b, f, val){
     case "area": return `<div class="field"><label for="${id}">${esc(lab)}${priv}</label>${help}<textarea id="${id}" rows="${f.rows || 4}" ${data} placeholder="${ph}">${esc(val || "")}</textarea>${assist}</div>`;
     case "date": return `<div class="field"><label for="${id}">${esc(lab)}</label>${help}<input id="${id}" type="date" ${data} value="${esc(val || "")}"></div>`;
     case "choice": return `<div class="field"><span class="label">${esc(lab)}</span>${help}${chipsHTML(b, fnv(f.opts), val, false)}</div>`;
-    case "multi": return `<div class="field"><span class="label">${esc(lab)}</span>${help}${chipsHTML(b, fnv(f.opts), val, true)}</div>`;
+    case "multi": { let opts = fnv(f.opts), more = "";
+      // A long list shows its most common options first, plus anything already chosen.
+      if (f.top && !ui.allOpts.has(b)) { const cur = val || [], shown = opts.filter(o => f.top.includes(o[0]) || cur.includes(o[0]));
+        if (shown.length < opts.length) { more = `<button type="button" class="chip add" data-act="moreopts" data-b="${esc(b)}">More ${esc(f.moreLabel || "options")} (${opts.length - shown.length})</button>`; opts = shown; } }
+      return `<div class="field"><span class="label">${esc(lab)}</span>${help}${chipsHTML(b, opts, val, true).replace(/<\/div>$/, more + "</div>")}</div>`; }
     case "btype": { const rid = b.split("|")[2], it = S.reg.costs.find(x => x.id === rid), cur = it ? typeOf(it) : (val || "");
       return `<div class="field"><label for="${id}">${esc(lab)}</label><select id="${id}" data-bsel="${esc(b)}">${typeOptionsHTML(cur)}</select><p class="help">Not listed? Add your own type in its category below the list of bills.</p></div>`; }
     case "acct": return `<div class="field"><label for="${id}">${esc(lab)}</label><select id="${id}" data-bsel="${esc(b)}"><option value="">Not recorded</option>${S.reg.accounts.map(x => `<option value="${x.id}"${x.id === val ? " selected" : ""}>${esc(acctLabel(x.id))}</option>`).join("")}</select>${S.reg.accounts.length ? "" : `<p class="help">Add accounts under Money › Bank accounts to pick one here.</p>`}</div>`;
   }
   return "";
 }
+// Roles use the same picker as the other people fields: chosen people as rows, everyone else one tap away.
 function roleHTML(f){
-  const hs = holders(f.role), others = S.reg.people.filter(p => !(p.roles || []).includes(f.role)), id = "rl" + (++fidN);
-  return `<div class="field"><span class="label">${esc(fnv(f.label))}</span>${f.help ? `<p class="help">${esc(f.help)}</p>` : ""}
-    ${hs.length ? `<div class="chips">${hs.map(p => `<span class="holder">${esc(p.name || "Unnamed")}${p.rel ? ` <span class="small" style="opacity:.75">${esc(p.rel)}</span>` : ""}<button aria-label="Remove ${esc(p.name)}" data-act="unrole" data-pid="${p.id}" data-role="${f.role}">×</button></span>`).join("")}</div>` : ""}
-    <div class="role-add">
-      ${others.length ? `<select aria-label="Choose from your people" data-roleselect="${f.role}"><option value="">Choose from your people…</option>${others.map(p => `<option value="${p.id}">${esc(p.name)}${p.rel ? " (" + esc(p.rel) + ")" : ""}</option>`).join("")}</select>` : `<span class="help" style="align-self:center">${S.reg.people.length ? "Everyone in your list already has this role." : "Your people list is empty. Add someone new:"}</span>`}
-      <input type="text" id="${id}" placeholder="Or add someone new" aria-label="New person's name">
-      <button class="btn sm" data-act="newrole" data-role="${f.role}" data-inp="${id}">Add</button>
-    </div></div>`;
+  const hs = holders(f.role), others = S.reg.people.filter(p => !(p.roles || []).includes(f.role) && filled(p.name)), id = "rl" + (++fidN);
+  return `<div class="field pf"><span class="label">${esc(fnv(f.label))}</span>${f.help ? `<p class="help">${esc(f.help)}</p>` : ""}
+    ${hs.length ? `<div class="prows">${hs.map(p => `<div class="prow"><span class="pname">${esc(p.name || "Unnamed")}${p.rel ? ` <span class="small muted">${esc(p.rel)}</span>` : ""}</span><button type="button" class="px" data-act="unrole" data-pid="${p.id}" data-role="${f.role}" aria-label="Remove ${esc(p.name || "this person")}">×</button></div>`).join("")}</div>` : ""}
+    ${others.length ? `<div class="chips" role="group" aria-label="Add from your people">${others.map(p => `<button type="button" class="chip add" data-act="roleadd" data-pid="${p.id}" data-role="${f.role}">+ ${esc(p.name)}</button>`).join("")}</div>` : ""}
+    <div class="role-add pf-add"><input type="text" id="${id}" placeholder="${others.length || hs.length ? "Or someone new" : "Their name"}" aria-label="New person’s name"><button type="button" class="btn sm" data-act="newrole" data-role="${f.role}" data-inp="${id}">Add</button></div></div>`;
 }
 function fieldsHTML(prefix, fields){
   const f = F();
@@ -1924,7 +1992,11 @@ function entryHTML(name, it){
     const head = `<button class="entry-head" aria-expanded="${open}" data-act="open" data-id="${it.id}"><span class="entry-title">${esc(def.title(it) || "New " + def.noun)}</span><span class="entry-sub">${esc(def.sub(it) || "")}</span>${def.amt ? `<span class="entry-amt">${esc(def.amt(it))}</span>` : ""}</button>`;
     if (!open) return `<div class="entry">${head}</div>`;
     const etip = def.entryTip && def.entryTip(it);
-    const body = def.fields().filter(fd => !fd.show || fd.show(it)).map(fd => inputHTML(`r|${name}|${it.id}|${fd.k}`, fd, it[fd.k])).join("");
+    // Less-used fields wait behind "More details" until they're wanted (or already have something in them).
+    const fs = def.fields().filter(fd => !fd.show || fd.show(it)), showAll = ui.entryMore.has(it.id);
+    const mainF = fs.filter(fd => !fd.more || showAll || filled(it[fd.k])), hiddenF = fs.filter(fd => !mainF.includes(fd));
+    const body = mainF.map(fd => inputHTML(`r|${name}|${it.id}|${fd.k}`, fd, it[fd.k])).join("")
+      + (hiddenF.length ? `<div class="field"><button type="button" class="btn sm ghost" data-act="entrymore" data-id="${it.id}">+ ${esc(hiddenF.map(fd => fnv(fd.label)).join(" and "))}</button></div>` : "");
     const del = ui.confirmDel === it.id
       ? `<span class="small muted">Delete this ${def.noun}?</span><button class="btn sm" data-act="delyes" data-reg="${name}" data-id="${it.id}">Yes, delete</button><button class="btn sm ghost" data-act="delno">Keep it</button>`
       : `<button class="btn sm ghost" data-act="del" data-id="${it.id}">Delete</button>`;
@@ -2009,7 +2081,7 @@ function billsQuickHTML(){
   }
   if (!n) return `<div class="bq-hero"><h3>Find your bills in a minute</h3>
       <p class="muted">Download statements (CSV files) from every bank and card you use, ideally covering 6 to 12 months, and choose them all at once. They’re read here on this device and never uploaded. Everything that keeps charging you is found, then you decide what happens to each one.</p>
-      <div class="row">${upload}<button class="btn ghost" data-act="talk" data-v="bills">Tell me about them instead</button></div>${err}</div>
+      <div class="row">${upload}<button class="btn ghost" data-act="talk" data-v="bills">${ui.ai.ok ? "Tell me about them instead" : "Tick them from a list instead"}</button></div>${err}</div>
     <div class="row"><button class="btn sm ghost" data-act="bmode" data-v="fine">Set up categories first (fine-tune)</button></div>`;
   return `<div class="bq-hero"><h3>${n} thing${n === 1 ? "" : "s"} keep charging you, about ${money(costsTotal())} a month.</h3>
       <div class="meter" aria-hidden="true"><span style="width:${Math.round((n - und) / n * 100)}%"></span></div>
@@ -2490,14 +2562,27 @@ function welcomeHTML(){
   return `<header class="top welcome-top"><span class="brand"><span class="mark" aria-hidden="true"></span><b>FirstLight</b></span></header>
    <section class="hero">
      <div class="hero-night"><div class="wrap">
-       <span class="eyebrow on-night">Shining a light on everything they’ll need</span>
-       <h1>However dark the night without you, <em>be their first light.</em></h1>
+       <div class="stack herotext"><span class="eyebrow on-night">Shining a light on everything they’ll need</span>
+       <h1>However dark the night without you, <em>be their first light.</em></h1></div>
+       <span class="mark heromark" aria-hidden="true"></span>
      </div></div>
      <div class="hero-dawn" aria-hidden="true"></div>
-     <div class="hero-day"><div class="wrap">
-       <p class="lede">FirstLight helps you write down the things only you know: the bills, the accounts, how the house works, who to call, and what you want. So whether you’re in hospital tonight or gone for good, the people you love can step in.</p>
-       <div class="row"><button class="btn primary" data-act="start">Start my plan</button><button class="btn" data-act="check">How ready are you? Take the 2-minute check</button><button class="btn ghost" data-act="example">See an example</button></div>
-       <p class="small muted">It sits alongside your will; it doesn’t replace it. Passwords and card numbers are only ever stored encrypted, with a passphrase only you know.</p>
+     <div class="hero-day"><div class="wrap herogrid">
+       <div class="stack herocopy">
+         <p class="lede">FirstLight helps you write down the things only you know: the bills, the accounts, how the house works, who to call, and what you want. So whether you’re in hospital tonight or gone for good, the people you love can step in.</p>
+         <div class="row ctas"><button class="btn primary" data-act="start">Start my plan</button><button class="btn" data-act="check">Take the 2-minute check</button></div>
+         <p class="small">Not ready to start? <button type="button" class="linkbtn" data-act="example">Look around an example plan</button></p>
+         <div class="parentcta"><div><strong>Doing this with a parent?</strong><span class="small">Make it a Sunday afternoon conversation, not a form. We’ll guide you both.</span></div><button class="btn sm" data-act="startparent">Start a plan for a parent</button></div>
+         <p class="small muted">It sits alongside your will; it doesn’t replace it. Passwords and card numbers are only ever stored encrypted, with a passphrase only you know.</p>
+       </div>
+       <div class="mock" role="img" aria-label="A preview of FirstLight on a phone. If you were in hospital tonight, Jo could know who to call first, tell the hospital your medications and get into the house. Keeping the bills paid is still to sort.">
+         <div class="mock-top"><span class="mark" aria-hidden="true"></span><b>FirstLight</b><span class="mock-menu">☰ Menu</span></div>
+         <div class="mock-tabs"><span class="on">Today</span><span>My plan</span><span>For my family</span></div>
+         <div class="mock-card"><span class="mock-eye">Hospital tonight · 7 of 10 ready</span><div class="mock-h">If you were in hospital tonight, Jo could…</div>
+           <div class="mock-row yes"><i>✓</i>Know who to call first</div><div class="mock-row yes"><i>✓</i>Tell the hospital your medications</div><div class="mock-row yes"><i>✓</i>Get into the house</div>
+           <div class="mock-row no"><i>○</i>Keep the bills paid<span>Sort it ›</span></div></div>
+         <div class="mock-card soft"><span class="mock-eye">For my family</span><div class="mock-row"><i>▤</i>Hospital summary</div><div class="mock-row"><i>▤</i>Executor’s list</div></div>
+       </div>
      </div></div>
    </section>
    <section class="band">
@@ -2506,7 +2591,6 @@ function welcomeHTML(){
        <div class="panel"><h3>Ready for hospital, not just funerals</h3><p>A hospital summary, a wallet card, and who can act for you, as well as your wishes if you die.</p></div>
        <div class="panel"><h3>Private by design</h3><p>Passwords and card numbers go in a vault that’s scrambled on your device with a passphrase only you know. Nobody else can read it, including us.</p></div>
      </div>
-     <div class="parentband"><div class="stack" style="gap:4px"><h3>Doing this with a parent?</h3><p>Make it a Sunday afternoon conversation, not a form. We’ll guide you both through it.</p></div><button class="btn" data-act="startparent">Start a plan for a parent</button></div>
    </section>`;
 }
 // The three places. Every view belongs to one of them (Settings belongs to none).
@@ -2531,7 +2615,9 @@ function topHTML(minimal){
       <button role="menuitem" data-act="go" data-v="settings">Settings</button>
       <button role="menuitem" data-act="go" data-v="chapter" data-ch="admin" data-stid="vault">The vault</button>
       <button role="menuitem" data-act="go" data-v="strengthen">Strengthen my plan</button>
-      <button role="menuitem" data-act="rescan">Redo the Life Scan</button></div></div>` : "";
+      <button role="menuitem" data-act="rescan">Redo the Life Scan</button>
+      <button role="menuitem" data-act="backup">Download a backup</button>
+      <label role="menuitem" for="restore_in2" tabindex="0">Restore from a backup</label><input id="restore_in2" type="file" accept=".json,application/json" hidden></div></div>` : "";
   return `${S.example ? `<div class="banner">You’re looking at an example plan for a made-up person. <button data-act="start">Start your own</button></div>` : ""}
   <header class="top">
    <button class="brand" data-act="go" data-v="${S.scanDone ? "today" : "welcome"}"><span class="mark" aria-hidden="true"></span><b>FirstLight</b></button>
@@ -2567,12 +2653,12 @@ function readyLists(){
   const docWill = S.reg.docs.some(x => /will/i.test(x.type || ""));
   return {
     unwell:[["Who to call", holders("notify_first").length > 0, ["personal","who"]], ["Medications and doctor", filled(ans("personal.health.meds")) || filled(ans("personal.health.gp")), ["personal","health"]],
-      ["Someone who can act for you legally", S.scan.epoa === "yes" || ans("personal.act.docs") === "yes", ["personal","act"]], ["The bills that keep coming", S.reg.costs.length > 0, ["admin","bills"]], ["A way into the house", holders("key_holder").length > 0, ["home","access"]]],
+      ["Someone who can act for you legally", S.scan.epoa === "yes" || ans("personal.act.docs") === "yes", ["personal","act"]], ["The bills that keep coming", S.reg.costs.length > 0, ["admin","bills"]], ["A way into the house", holders("key_holder").length > 0 || filled(ans("home.access.spare")), ["home","access"]]],
     die:[["Where the will is", docWill, ["admin","docs"]], ["Your executor", holders("executor").length > 0, ["family","everyone"]], ["Burial or cremation", filled(ans("personal.body.choice")), ["personal","body"]],
       ["How people find out", holders("notify_first").length > 0 || holders("social").length > 0, ["personal","who"]], ["Accounts and insurance", S.reg.accounts.length > 0 || S.reg.policies.length > 0, ["money","accounts"]]]};
 }
 function readyHTML(title, list){
-  return `<div class="card tight"><span class="eyebrow">${esc(title)}</span><div class="ready">${list.map(([lab, ok, go]) => `<button data-act="go" data-v="chapter" data-ch="${go[0]}" data-stid="${go[1]}"><span class="mk${ok ? " yes" : ""}">✓</span><span class="lbl">${esc(lab)}</span><span class="state">${ok ? "Written down" : "Not yet"}</span></button>`).join("")}</div></div>`;
+  return `<div class="card tight"><span class="eyebrow">${esc(title)} · ${list.filter(x => x[1]).length} of ${list.length}</span><div class="ready">${list.map(([lab, ok, go]) => `<button data-act="go" data-v="chapter" data-ch="${go[0]}" data-stid="${go[1]}"><span class="mk${ok ? " yes" : ""}">✓</span><span class="lbl">${esc(lab)}</span><span class="state">${ok ? "Written down" : "Not yet"}</span></button>`).join("")}</div></div>`;
 }
 function overviewHTML(){
   const sugs = suggestions().filter(x => !S.sug[x.id]);
@@ -2581,7 +2667,7 @@ function overviewHTML(){
   const nextEss = ESSENTIALS.findIndex(([cid, sid]) => { const [ch, st] = stepFind(cid, sid); return !(ch && st && stepHas(ch, st)); });
   const title = subj() === "me" ? (S.settings.name ? esc(S.settings.name) + ", here’s your plan" : "Here’s your plan") : esc(planName());
   const parentTips = subj() !== "me" ? `<div class="card tight"><span class="eyebrow">Doing this together</span><ul class="calm-list"><li>Pick a relaxed time, with a cup of tea, not after a hospital visit.</li><li>Start practical: “If you were in hospital, who should feed the cat?”</li><li>Let them lead. It’s their life and their plan.</li><li>One area per visit is plenty.</li><li>Where the plan says “you”, it means ${esc(ownerName())}.</li></ul></div>` : "";
-  return `<div class="wrap wide"><div class="stack"><span class="eyebrow">My plan</span><h1>${title}</h1>
+  return `<div class="wrap wide"><div class="stack"><span class="eyebrow">My plan · ${readyCount()} of 10 ready</span><h1>${title}</h1>
     <p class="lede">${esc(T({soft:"Everything written so far, by situation and by area. Open anything to read it or change it.", neutral:"Everything written so far, by situation and by area.", direct:"Areas, status and open suggestions."}))}</p></div>
    <div class="ov"><div class="stack" style="gap:14px;min-width:0">
      <div class="two">${readyHTML("If you were in hospital tonight", rl.unwell)}${readyHTML("If you died", rl.die)}</div>
@@ -2590,6 +2676,7 @@ function overviewHTML(){
        <button class="chap" data-act="go" data-v="words"><div class="row"><h3>Letters and words</h3><span class="pill ${effStatus("words")}">${esc(STATUS.find(x => x[0] === effStatus("words"))[1])}</span></div><p>The things you’d want to say if you had one more conversation.</p><span class="meta">${(n => n ? `${n} letter${n === 1 ? "" : "s"} started` : "No letters yet")(S.reg.letters.filter(x => filled(x.body)).length)}</span></button>
      </div></div>
      <aside class="stack" style="gap:14px">${parentTips}
+      ${moreLeft() ? `<div class="card tight"><span class="eyebrow">Tailor your plan</span><h3>${moreLeft()} optional questions</h3><p class="small muted">Insurance, investments, a safe or storage unit, digital life and more. Answering adds the topics that apply.</p><div><button class="btn sm" data-act="tailor">Tailor it</button></div></div>` : ""}
       <div class="card tight"><span class="eyebrow">Strengthen my plan</span><h3>${sugs.length ? sugs.length + " things to consider" : "Nothing to consider right now"}</h3>${sugs.slice(0,3).map(x => `<p class="small">· ${esc(x.title)}</p>`).join("")}<div><button class="btn sm" data-act="go" data-v="strengthen">See all</button></div></div>
      </aside></div></div>`;
 }
@@ -2625,6 +2712,7 @@ const choiceFact = (label, key, value, opts, where) => { const o = opts.find(x =
 const PERSON_SCHEMA = `{"name":"","rel":"how they're related to the person, e.g. Wife, Son, Neighbour","phone":""}`;
 const CAP = [
  {id:"people", step:["family","everyone"], title:"Your people", q:"Who are the people closest to you? Tell me their names and how they’re related to you. Phone numbers help too.",
+  qOff:"Who are the people closest to you? Add each one, with how they’re related to you. A phone number helps too.",
   ph:"e.g. My wife Jo, 0400 000 101. Our kids Mia (19) and Tom (15). My brother Sam.", done:() => S.reg.people.some(p => !(p.roles || []).includes("professional")),
   schema:`{"people":[${PERSON_SCHEMA}]}`, facts:j => personList(j.people).map(p => personFact(p, null, "Person", "Your people"))},
  {id:"call", step:["personal","who"], title:"Who to call", q:"If you were taken to hospital tonight, who should be called first? And who’s next if they can’t be reached?",
@@ -2647,7 +2735,8 @@ const CAP = [
   facts:j => [].concat(personList(j.money).map(p => personFact(p, "attorney", "Looks after money", "Who can act for you")), personList(j.medical).map(p => personFact(p, "health", "Makes medical decisions", "Who can act for you")),
     [choiceFact("Legal papers signed?", "personal.act.docs", j.signed, [["yes","Yes, signed"],["partly","One of them is"],["no","Not yet"],["unsure","Not sure"]], "Who can act for you")].filter(Boolean),
     strs(j.where).map(x => textFact("Papers kept", "personal.act.where", x, "Who can act for you", "set")))},
- {id:"bills", step:["admin","bills"], title:"Bills that keep coming", q:"What bills and subscriptions come out regularly? Tell me the ones you remember, or snap a bill. The fastest way is to upload your bank statements.", photo:"Take a photo of a bill or renewal notice",
+ {id:"bills", step:["admin","bills"], title:"Bills that keep coming", q:"What bills and subscriptions come out regularly? Tell me the ones you remember, or snap a bill. The fastest way is to upload your bank statements.",
+  qOff:"Which bills and subscriptions come out regularly? Tick the ones you have and add any others. Amounts can wait.", photo:"Take a photo of a bill or renewal notice",
   ph:"e.g. Origin for power, about $640 a quarter. Netflix. Shannons car insurance, monthly.", done:() => S.reg.costs.length > 0, statements:true,
   schema:`{"bills":[{"provider":"company","amount":"number only, if given","freq":"Weekly | Fortnightly | Monthly | Quarterly | Yearly | Other"}]}`,
   facts:j => (Array.isArray(j.bills) ? j.bills : []).filter(b => b && filled(b.provider)).map(b => ({label:"Bill", where:"Bills and subscriptions", fields:[["provider","Company"],["amount","Amount ($)"],["freq","How often", FREQ]],
@@ -2683,7 +2772,7 @@ const CAP = [
 ];
 const capById = id => CAP.find(x => x.id === id);
 const snoozed = id => (S.snooze || {})[id] > Date.now();
-const firstOpenTopic = skip => { const t2 = CAP.find(x => !x.done() && !snoozed(x.id) && x.id !== skip); return t2 ? t2.id : null; };
+const firstOpenTopic = skip => { const t2 = capOrder().find(x => !x.done() && !snoozed(x.id) && x.id !== skip); return t2 ? t2.id : null; };
 // "Tell me anything": every written-answer field in the plan is somewhere it can be filed.
 function fileTargets(){
   const f = F(), out = [];
@@ -2692,7 +2781,9 @@ function fileTargets(){
     out.push({key:`${ch.id}.${st.id}.${fd.k}`, label:`${ch.title} › ${fnv(st.title)}: ${fnv(fd.label)}`, where:fnv(st.title)}); })));
   return out;
 }
-const ANY = {id:"anything", title:"Tell me anything", q:"Tell me anything your family should know. I’ll work out where it goes.", photo:"Take a photo of anything useful: a card, a letter, the switchboard",
+const askText = topic => !ui.ai.ok && topic.qOff ? topic.qOff : topic.q;
+const ANY = {id:"anything", title:"Tell me anything", q:"Tell me anything your family should know. I’ll work out where it goes.",
+  qOff:"Write anything your family should know. I’ll suggest where it goes, and you can change it.", photo:"Take a photo of anything useful: a card, a letter, the switchboard",
   ph:"e.g. The spare key is under the frog by the back door.", done:() => false};
 function anyFacts(j){
   const tg = fileTargets(), byKey = Object.fromEntries(tg.map(x => [x.key, x])), opts = tg.map(x => [x.key, x.label]);
@@ -2700,9 +2791,27 @@ function anyFacts(j){
     personList(j.people).map(p => personFact(p, ROLES.some(r => r[0] === p.role) ? p.role : null, p.role && ROLES.some(r => r[0] === p.role) ? roleName(p.role) : "Person", "Your people")),
     CAP.find(x => x.id === "bills").facts({bills:j.bills || []}));
 }
+// Without Claude: the place whose label shares the most words with what they wrote (with a few synonyms).
+function guessTarget(text, tg){
+  const words = lc(text).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(w => w.length > 2 && !ASK_STOP.has(w)).map(w => w.replace(/s$/, ""));
+  if (!words.length) return "";
+  const terms = new Set(words.concat(...words.map(w => ASK_SYN[w] || ASK_SYN[w + "s"] || [])));
+  let best = null, bs = 0;
+  tg.forEach(x => { const hay = lc(x.label), q2 = lc(x.label.split(": ")[1] || ""); let sc = 0; terms.forEach(t2 => { if (hay.includes(t2)) sc += 1 + (q2.includes(t2) ? 1 : 0); }); if (sc > bs) { bs = sc; best = x; } });
+  return best ? best.key : "";
+}
 function anyManualFact(text){
-  const tg = fileTargets();
-  return {label:"Where should this go?", where:"", fields:[["key","File under",[["","Choose where…"]].concat(tg.map(x => [x.key, x.label]))],["text","What to write"]], v:{key:"", text:text || ""}, apply:v => { if (v.key) addAnswer(v.key, v.text); }};
+  const tg = fileTargets(), guess = guessTarget(text, tg);
+  return {label:guess ? "Best guess, change it if it’s wrong" : "Choose where it goes", where:"", fields:[["key","File under",[["","Choose where…"]].concat(tg.map(x => [x.key, x.label]))],["text","What to write"]], v:{key:guess, text:text || ""}, apply:v => { if (v.key) addAnswer(v.key, v.text); }};
+}
+// Without Claude, the bills question is a tick-list of common bills.
+const QUICK_BILLS = () => { const nz = L().nz; return ["Electricity","Gas","Water","Internet","Mobile plan","Council rates","Home & contents insurance","Car insurance", nz ? "Vehicle licence (rego)" : "Car registration", nz ? "AA membership" : "Roadside assistance","Private health insurance","Netflix","Spotify","Amazon Prime","Gym","iCloud+"]; };
+function quickBillsHTML(){
+  const has = t2 => S.reg.costs.some(x => typeOf(x) === t2), n = S.reg.costs.length;
+  return `<div class="card tight manual"><span class="eyebrow">Tick the ones you have</span>
+   <div class="chips" role="group" aria-label="Common bills">${QUICK_BILLS().map(t2 => { const on = has(t2); return `<button type="button" class="chip${on ? " on" : ""}" aria-pressed="${on}" data-act="qbill" data-t="${esc(t2)}">${on ? "✓ " : ""}${esc(t2)}</button>`; }).join("")}</div>
+   <div class="role-add pf-add"><input type="text" id="qb_new" placeholder="Another one, e.g. Shannons" aria-label="Another bill or subscription"><button type="button" class="btn sm" data-act="qbillnew" data-inp="qb_new">Add</button></div>
+   <p class="help">${n ? `${n} bill${n === 1 ? "" : "s"} in your plan. ` : ""}Amounts, and what should happen to each, can wait. Or <button type="button" class="linkbtn" data-act="go" data-v="chapter" data-ch="admin" data-stid="bills">upload bank statements</button> to find them all (easiest on a computer).</p></div>`;
 }
 // Mask anything that looks like a full card or account number before it leaves the device.
 const maskNumbers = s => String(s || "").replace(/(?:\d[ -]?){8,19}/g, m2 => { const d2 = m2.replace(/\D/g, ""); return "••" + d2.slice(-4); });
@@ -2806,20 +2915,20 @@ function talkHTML(){
   const msgs = cp.msgs.map(m2 => m2.who === "me"
     ? `<div class="say">${m2.img ? `<img src="${esc(m2.img)}" alt="Your photo">` : ""}${m2.text ? `<span>${esc(m2.text)}</span>` : ""}</div>`
     : `<div class="reply${m2.saved ? " saved" : ""}">${m2.saved ? `<span class="tick" aria-hidden="true">✓</span>` : ""}<span>${esc(m2.text)}</span></div>`).join("");
-  const manualForm = ch && st && (cp.manual || ui.capManual) ? (topic.statements ? `<div class="card tight"><p>Bills are quickest from your bank statements, or add them on the bills page.</p><div><button class="btn primary" data-act="go" data-v="chapter" data-ch="admin" data-stid="bills">Go to bills</button></div></div>`
-      : `<div class="card tight manual"><span class="eyebrow">Fill it in yourself</span>${stepBodyHTML(ch, st)}</div>`) : "";
+  const manualForm = ch && st && (cp.manual || ui.capManual) ? (topic.statements ? quickBillsHTML()
+      : `<div class="card tight manual"><span class="eyebrow">Fill it in here</span>${stepBodyHTML(ch, st)}</div>`) : "";
   const canTalk = ui.ai.ok || cp.topic === "anything" || topic.story;
   const composer = canTalk && !cp.facts && !cp.busy ? composerHTML("cap", cp.saved ? (cp.followup ? "Answer, or add anything else…" : "Anything else to add?") : (topic.ph || "Type or talk…"), topic.story ? null : topic.photo, topic.story) : "";
   const after = sun ? (cp.saved || manualForm ? `<div class="row talk-next">${sun.idx < sun.queue.length - 1 ? `<button class="btn primary" data-act="sunnext">Next question ›</button>` : ""}<button class="btn${sun.idx < sun.queue.length - 1 ? " ghost" : " primary"}" data-act="sunend">That’s enough for today</button></div>` : "")
     : cp.saved || manualForm ? `<div class="row talk-next">${nextId ? `<button class="btn primary" data-act="talknext" data-v="${nextId}">Next: ${esc(capById(nextId).title)} ›</button>` : ""}<button class="btn${nextId ? " ghost" : " primary"}" data-act="go" data-v="today">${nextId ? "Stop here for now" : "Back to Today"}</button></div>` : "";
   const sunHead = sun ? `<div class="sunbar"><span class="small muted">Sunday afternoon · question ${sun.idx + 1} of ${sun.queue.length}</span><div class="row" style="gap:4px">${cp.saved ? "" : `<button class="btn sm ghost" data-act="sunnext">Skip this one</button>`}<button class="btn sm" data-act="sunend">Take a break</button></div></div>` : "";
-  const readOut = "speechSynthesis" in window ? `<button class="btn sm readout" data-act="speak" data-t="${esc(topic.q)}" aria-label="Read the question out loud"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none"/></svg>Read it out</button>` : "";
+  const readOut = "speechSynthesis" in window ? `<button class="btn sm readout" data-act="speak" data-t="${esc(askText(topic))}" aria-label="Read the question out loud"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none"/></svg>Read it out</button>` : "";
   return `<div class="wrap talk${sun ? " sunday" : ""}">
-    ${sun ? sunHead : `<div class="row between"><button class="crumb" data-act="go" data-v="today">‹ Today</button>${cp.seq && idx >= 0 ? `<span class="small muted">The essentials · ${CAP.filter(x => x.done()).length} of ${CAP.length} done</span>` : ""}</div>`}
+    ${sun ? sunHead : `<div class="row between"><button class="crumb" data-act="go" data-v="today">‹ Today</button>${cp.seq && idx >= 0 ? `<span class="small muted">The essentials · ${readyCount()} of 10 ready</span>` : ""}</div>`}
     ${progress}
     <div class="thread" aria-live="polite">
       ${sun ? `<span class="eyebrow">${topic.story ? "A story for the family" : esc(topic.title)}${sun.who ? " · read this to " + esc(sun.who) : ""}</span>` : ""}
-      <p class="ask">${esc(topic.q)}</p>${readOut ? `<div>${readOut}</div>` : ""}
+      <p class="ask">${esc(askText(topic))}</p>${readOut ? `<div>${readOut}</div>` : ""}
       ${topic.story && !cp.saved ? `<ul class="calm-list joggers">${topic.joggers.slice(0, 3).map(j => `<li>${esc(j)}</li>`).join("")}</ul>` : ""}
       ${msgs}
       ${cp.busy ? `<div class="reply busy"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Reading that…</span></div>` : ""}
@@ -2959,6 +3068,10 @@ function mainPerson(){
   const p = holders("attorney")[0] || holders("executor")[0] || holders("notify_first")[0] || S.reg.people.find(x => !(x.roles || []).includes("professional"));
   return p ? firstName(p.name) : "";
 }
+// One measure of readiness everywhere: ten things written down (five for hospital, five if you die).
+const readyCount = () => { const rl = readyLists(); return rl.unwell.concat(rl.die).filter(x => x[1]).length; };
+const checkOf10 = () => Math.round(checkScore() / 10);
+const checkTaken = () => CHECK.some(q => (S.check || {})[q[0]]);
 function outcomes(){
   const rl = readyLists(), u = Object.fromEntries(rl.unwell.map(x => [x[0], x[1]])), d2 = Object.fromEntries(rl.die.map(x => [x[0], x[1]]));
   return {
@@ -2981,10 +3094,11 @@ function todayHTML(){
       <div class="outs">${yes.map(x => `<div class="out yes"><span class="mk" aria-hidden="true">✓</span><span>${esc(x[0])}</span></div>`).join("")}
         ${no.length && yes.length ? `<p class="small muted" style="margin-top:6px">${esc(who === "your family" ? "They" : who)} couldn’t yet:</p>` : ""}
         ${no.map(x => `<button class="out no" data-act="talk" data-v="${x[2]}"><span class="mk" aria-hidden="true">○</span><span>${esc(x[0])}${x[3] ? ` <span class="muted small">(${esc(x[3])})</span>` : ""}</span><span class="go">Sort it ›</span></button>`).join("")}</div>
+      ${checkTaken() ? `<p class="small muted progressnote">${nReady > checkOf10() ? `In the 2-minute check you were at ${checkOf10()} of 10. Now ${nReady} are written down for your family.` : `In the 2-minute check you rated yourself ${checkOf10()} of 10. Each thing you write down here counts for your family: ${nReady} so far.`}</p>` : ""}
     </section>`;
   const nextId = firstOpenTopic(), nt = nextId && capById(nextId);
   const sug = !nt ? suggestions().filter(x => !S.sug[x.id] && x.go)[0] : null;
-  const next = nt ? `<section class="card nextstep"><span class="eyebrow">Next · about 2 minutes</span><h2>${esc(nt.q)}</h2>
+  const next = nt ? `<section class="card nextstep"><span class="eyebrow">Next · about 2 minutes</span><h2>${esc(askText(nt))}</h2>
         <div class="row"><button class="btn primary" data-act="talk" data-v="${nt.id}" data-seq="1">Answer now</button><button class="btn ghost" data-act="snooze" data-v="${nt.id}">Not today</button></div></section>`
     : sug ? `<section class="card nextstep"><span class="eyebrow">Next</span><h2>${esc(sug.title)}</h2><p class="muted">${esc(sug.body)}</p>
         <div class="row"><button class="btn primary" data-act="go" data-v="chapter" data-ch="${sug.go[0]}" data-stid="${sug.go[1]}">Go to it</button><button class="btn ghost" data-act="sugset" data-id="${sug.id}" data-v="later">Not for me</button></div></section>`
@@ -2996,11 +3110,19 @@ function todayHTML(){
       ${other ? "" : `<button class="way" data-act="go" data-v="sunday"><strong>Sunday afternoon mode</strong><span class="small muted">Doing this with someone? Big type, read aloud, one question at a time.</span></button>`}
       <button class="way" data-act="go" data-v="chapter" data-ch="admin" data-stid="bills"><strong>Find your bills</strong><span class="small muted">${S.reg.costs.length ? `${S.reg.costs.length} bills. ${undecidedBills().length ? undecidedBills().length + " still to decide." : "All decided."}` : "Upload bank statements and decide in a minute."}</span></button>
     </div></section>`;
+  // Plans kept only in this browser get a gentle backup reminder once there's something to lose.
+  const backupNote = !store.ref && !S.example && nReady > 0 && (!S.backedUpAt || (S.updatedAt || 0) > S.backedUpAt + 7 * 864e5)
+    ? `<div class="note row between" style="gap:10px"><span class="small">${S.backedUpAt ? "You’ve added to your plan since your last backup." : "Your plan is only saved in this browser."}</span><button class="btn sm" data-act="backup">Download a backup</button></div>` : "";
+  // On wide screens: where things stand on the left, what to do next on the right.
   return `<div class="wrap today">
     <div class="stack" style="gap:6px"><span class="eyebrow">${esc(hi)}${nm ? ", " + esc(nm) : ""}</span><h1>${nReady >= 10 ? "Your family is ready for the big things." : nReady ? "Here’s where things stand." : "Let’s start with tonight."}</h1></div>
-    ${sundayCard}${next}${readiness}
-    <section class="stack" style="gap:8px"><span class="eyebrow">Or tell me anything</span>${composerHTML("home", ANY.ph, ANY.photo)}</section>
-    ${ways}
+    ${backupNote}
+    <div class="today-grid">
+      <div class="tg-next">${sundayCard}${next}</div>
+      <div class="tg-ready">${readiness}</div>
+      <section class="stack tg-tell" style="gap:8px"><span class="eyebrow">Or tell me anything</span>${composerHTML("home", ANY.ph, ANY.photo)}</section>
+      <div class="tg-ways">${ways}</div>
+    </div>
   </div>`;
 }
 /* ================= the family view ================= */
@@ -3166,15 +3288,17 @@ function chapterHTML(){
   const forWhom = subj() !== "me" ? `<div class="tip">You’re filling this in for ${esc(ownerName())}. Where it says “you”, it means ${esc(ownerName())}. Do it together if you can.</div>` : "";
   let lastGroup = null;
   const topics = essMode ? "" : `<div class="topics" role="tablist">${sts.map((s2, i) => { let g = ""; if (s2.group && s2.group !== lastGroup) { lastGroup = s2.group; g = `<span class="tgroup">${esc(s2.group)}</span>`; }
-    return g + `<button class="topic${i === ui.step ? " on" : ""}" role="tab" aria-selected="${i === ui.step}" data-act="step" data-st="${i}"><span class="dot${stepHas(ch, s2) ? " enough" : ""}"></span>${esc(fnv(s2.title))}</button>`; }).join("")}</div>`;
+    return g + `<button class="topic${i === ui.step ? " on" : ""}" role="tab" aria-selected="${i === ui.step}" data-act="step" data-st="${i}"><span class="dot${stepHas(ch, s2) ? " enough" : ""}"></span>${esc(fnv(s2.title))}</button>`; }).join("")}</div>`
+    // On phones the topic buttons fold into one selector, so the first question is on the first screen.
+    + (essMode ? "" : `<div class="topicsel"><label class="small muted" for="topicsel">Topic ${ui.step + 1} of ${sts.length}</label><select id="topicsel" data-stepsel="1">${sts.map((s2, i) => `<option value="${i}"${i === ui.step ? " selected" : ""}>${stepHas(ch, s2) ? "✓ " : ""}${esc(fnv(s2.title))}</option>`).join("")}</select></div>`);
   const eyebrow = essMode ? `The 15-minute essentials · ${ui.ess + 1} of ${ESSENTIALS.length}` : `${st.group ? esc(st.group) + " · " : ""}Topic ${ui.step + 1} of ${sts.length}`;
   const foot = essMode
     ? `${ui.ess > 0 ? `<button class="btn ghost" data-act="ess" data-i="${ui.ess - 1}">‹ Back</button>` : `<span></span>`}<div class="row">${ui.ess < ESSENTIALS.length - 1 ? `<button class="btn ghost" data-act="ess" data-i="${ui.ess + 1}">Skip for now</button><button class="btn primary" data-act="ess" data-i="${ui.ess + 1}">Next</button>` : `<button class="btn primary" data-act="essdone">Finish the essentials</button>`}</div>`
     : `${ui.step > 0 ? `<button class="btn ghost" data-act="step" data-st="${ui.step - 1}">‹ Back</button>` : `<span></span>`}<div class="row">${ui.step < sts.length - 1 ? `<button class="btn ghost" data-act="step" data-st="${ui.step + 1}">Skip for now</button><button class="btn primary" data-act="step" data-st="${ui.step + 1}">Next topic</button>` : `<button class="btn primary" data-act="go" data-v="overview">Back to your plan</button>`}</div>`;
-  return `<div class="wrap">
+  return `<div class="wrap chapterwrap"><div class="chapside">
     <div><button class="crumb" data-act="go" data-v="overview">‹ My plan</button></div>
     ${essMode ? `<div class="progressline" aria-hidden="true">${ESSENTIALS.map((_, i) => `<span class="${i <= ui.ess ? "on" : ""}"></span>`).join("")}</div>` : `<div class="stack"><h1>${esc(ch.title)}</h1><p class="lede">${esc(T(ch.intro))}</p></div>${enoughHint}`}
-    ${forWhom}${topics}
+    ${forWhom}${topics}</div>
     <section class="card" id="stepcard">
       <div class="stack" style="gap:8px"><span class="eyebrow">${eyebrow}</span><h2>${esc(fnv(st.title))}</h2><p class="why">${esc(fnv(st.why))}</p></div>
       ${tip ? `<div class="tip"><b>${esc(L().country)}:</b> ${esc(tip)}</div>` : ""}
@@ -3289,7 +3413,7 @@ function reviewHTML(){
     <p class="help">Fastest way to catch new bills: drop in a fresh bank statement file under Admin › Bills and subscriptions.</p></section></div>`;
 }
 function releaseHTML(){
-  const nT = holders("trusted").length;
+  const nT = holders("trusted").length, need = String(nT ? Math.min(+S.release.confirm, nT) : +S.release.confirm);
   return `<div class="wrap"><div><button class="crumb" data-act="go" data-v="family">‹ For my family</button></div>
    <div class="stack"><h1>Who can open it, and when</h1><p class="lede">A plan only helps if it reaches the right people at the right time, and never before. It opens in two stages.</p></div>
    <div class="note">This is a prototype: nothing is sent and no one is contacted. These settings show how release will work in the full app.</div>
@@ -3297,7 +3421,7 @@ function releaseHTML(){
     <div class="field"><span class="label">How many of them must agree?</span>${chipsHTML("rel|confirm", [["1","1"],["2","2"],["3","3"]], S.release.confirm, false)}${nT && +S.release.confirm > nT ? `<p class="help">You’ve only named ${nT}. Add more trusted contacts, or lower this number.</p>` : ""}</div>
     <div class="field"><span class="label">Waiting time before anything opens</span><p class="help">You get a text, an email and an app alert, and can cancel with one tap if you’re fine.</p>${chipsHTML("rel|wait", [["24","24 hours"],["48","48 hours"],["168","7 days"]], S.release.wait, false)}</div></section>
    <section class="card"><h2>What opens, and when</h2>
-    <div class="stage"><span class="num">1</span><div class="stack"><h3>Wishes and directions</h3><p class="muted">Opens when ${esc(S.release.confirm)} trusted ${S.release.confirm === "1" ? "contact confirms" : "contacts confirm"} and the waiting time passes without you cancelling. No death certificate needed, because those take weeks.</p>
+    <div class="stage"><span class="num">1</span><div class="stack"><h3>Wishes and directions</h3><p class="muted">Opens when ${nT && need === String(nT) && nT > 1 ? "all " + need + " of your" : need} trusted ${need === "1" ? "contact confirms" : "contacts confirm"} and the waiting time passes without you cancelling. No death certificate needed, because those take weeks.</p>
       <ul class="calm-list"><li>The first-days guide: who to tell, how, and what can wait</li><li>Funeral wishes</li><li>The household manual, without account details</li><li>Letters set to open “when the plan is released”, each to its own person</li></ul></div></div>
     <div class="stage"><span class="num">2</span><div class="stack"><h3>The money side</h3><p class="muted">Opens for your executor once a death certificate or grant of probate is uploaded.</p>
       <ul class="calm-list"><li>The executor’s list</li><li>Accounts, insurance, super, debts and assets</li><li>Online accounts and devices</li><li>The vault, which they can only open with your passphrase</li></ul></div></div>
@@ -3316,8 +3440,11 @@ function settingsHTML(){
     <div class="field"><span class="label">Faith language</span>${chipsHTML("set|faith", [["include","Include it"],["neutral","Keep it neutral"],["avoid","Leave it out"]], st.faith, false)}</div></section>
    <section class="card"><h2>Text size and look</h2>
     <div class="field"><span class="label">Text size</span>${chipsHTML("set|textSize", [["standard","Standard"],["large","Large"],["largest","Largest"]], st.textSize || "standard", false)}</div>
-    <div class="field"><span class="label">Look</span>${chipsHTML("set|theme", [["light","Daylight"],["dark","Dusk"],["auto","Match my device"]], st.theme || "light", false)}<p class="help">You can also change these any time from Aa at the top of the page.</p></div></section>
-   <section class="card"><h2>Your data</h2><p class="muted">${store.ref ? "The plan is saved privately to your account. Nobody else who opens this page can see it." : "The plan is saved in this browser only."} Passwords, PINs and card numbers are only kept in the vault, encrypted with your passphrase.</p>
+    <div class="field"><span class="label">Look</span>${chipsHTML("set|theme", [["light","Daylight"],["dark","Dusk"],["auto","Match my device"]], st.theme || "light", false)}<p class="help">You can also change these any time: use Aa at the top of the page, or Menu on a phone.</p></div></section>
+   <section class="card" id="datacard"><h2>Your data</h2><p class="muted">${store.ref ? "The plan is saved privately to your account. Nobody else who opens this page can see it." : "The plan is saved in this browser only. If this browser’s data is cleared, or you change phones, it’s gone, so keep a backup."} Passwords, PINs and card numbers are only kept in the vault, encrypted with your passphrase.</p>
+    ${ui.restore ? `<div class="note"><p><strong>Replace this plan with the backup${ui.restore.name ? " of " + esc(ui.restore.name) + "’s plan" : ""}${ui.restore.savedAt ? " from " + esc(new Date(ui.restore.savedAt).toLocaleDateString("en-AU", {day:"numeric", month:"long", year:"numeric"})) : ""}?</strong> What’s in this browser now will be replaced.</p><div class="row"><button class="btn primary sm" data-act="restoreyes">Yes, restore it</button><button class="btn ghost sm" data-act="restoreno">Keep this plan</button></div></div>` : ""}
+    <div class="row"><button class="btn sm primary" data-act="backup">Download a backup</button><label class="btn sm" for="restore_in" tabindex="0" role="button">Restore from a backup</label><input id="restore_in" type="file" accept=".json,application/json" hidden></div>
+    <p class="help">${S.backedUpAt ? "Last backup: " + esc(new Date(S.backedUpAt).toLocaleDateString("en-AU", {day:"numeric", month:"long", year:"numeric"})) + "." : "No backup yet."} The backup is one file with the whole plan. The vault stays scrambled inside it. Photos from the house walk stay on this device and aren’t included.</p>
     <div class="row">${ui.confirmReset ? `<span class="small">Clear the whole plan? This can’t be undone.</span><button class="btn sm" data-act="resetyes">Yes, clear it</button><button class="btn sm ghost" data-act="resetno">Keep it</button>`
       : ui.confirmExample ? `<span class="small">Replace your plan with the example? Your own plan will be cleared.</span><button class="btn sm" data-act="example">Yes, load the example</button><button class="btn sm ghost" data-act="exampleno">Keep mine</button>`
       : `<button class="btn sm" data-act="reset">Clear my plan</button><button class="btn sm ghost" data-act="${S.example || !S.started ? "example" : "exampleask"}">Load the example plan</button>`}</div></section></div>`;
@@ -3338,35 +3465,43 @@ function checkHTML(){
      <div>${CHECK.map(([k, q]) => `<div class="qrow"><span class="label">${esc(q)}</span>${chipsHTML("ck|" + k, [["yes","Yes"],["partly","Partly"],["no","No"]], S.check[k], false)}</div>`).join("")}</div>
      <div class="stepfoot"><button class="btn ghost" data-act="go" data-v="welcome">‹ Back</button><button class="btn primary" data-act="checkdone" ${answered ? "" : "disabled"}>See my result</button></div></section></div></main>`;
   }
-  const sc = checkScore(), gaps = CHECK.filter(q => S.check[q[0]] !== "yes");
+  const sc = checkScore(), sc10 = checkOf10(), gaps = CHECK.filter(q => S.check[q[0]] !== "yes");
   const band = sc < 40 ? "Right now, most of your life lives in your head. That’s completely normal, and it’s fixable in an afternoon."
     : sc < 75 ? "Your family could manage some of it, but they’d be guessing about the rest." : "You’re well ahead of most people. A plan would tie it all together in one place.";
   return `<main><div class="wrap"><section class="card"><span class="eyebrow">Your Continuity Check</span>
-    <div class="score"><strong>${sc}</strong><span class="muted">out of 100</span></div><div class="meter" aria-hidden="true"><span style="width:${sc}%"></span></div>
+    <div class="score"><strong>${sc10}</strong><span class="muted">out of 10 ready</span></div><div class="meter" aria-hidden="true"><span style="width:${sc}%"></span></div>
     <p class="lede">${esc(band)}</p>
     ${gaps.length ? `<div class="panel"><span class="label">Your plan would give your family</span><div class="reasons">${gaps.map(q => `<div>${esc(q[2])}</div>`).join("")}</div></div>` : ""}
     <div class="row"><button class="btn primary" data-act="checkbuild">Build my plan</button><button class="btn" data-act="checkparent">Do this for a parent instead</button><button class="btn ghost" data-act="checkredo">Change my answers</button></div>
-    <p class="help">Most people finish the essentials in about 15 minutes.</p></section></div></main>`;
+    <p class="help">Your plan counts the same way, out of 10, so you’ll see this number go up as you write things down. Most people do the essentials in about 15 minutes.</p></section></div></main>`;
 }
 
 /* ================= scan ================= */
+function scanQsHTML(grp){
+  return `<div class="scanq">${grp.qs.filter(q => !q.show || q.show()).map(q => `<div class="field"><span class="label">${esc(fnv(q.q))}</span>${q.help ? `<p class="help">${esc(fnv(q.help))}</p>` : ""}${chipsHTML("s|" + q.k, fnv(q.opts), S.scan[q.k], !!q.multi)}</div>`).join("")}</div>`;
+}
 function scanHTML(){
-  const pages = SCAN.length + 2, p = ui.scanPage;
+  const p = ui.scanPage, lede = subj() === "me" ? "Tap what applies. Skip anything you’d rather not answer." : `Answer for ${esc(ownerName())}. If you can, do this together.`;
+  // "Tailor your plan": the optional questions, three short pages, back to My plan at the end.
+  if (ui.scanMore) {
+    const n = SCAN_MORE.length, i = Math.min(Math.max(p, 1), n), grp = SCAN_MORE[i - 1];
+    const bar = `<div class="progressline" aria-hidden="true">${SCAN_MORE.map((_, j) => `<span class="${j < i ? "on" : ""}"></span>`).join("")}</div>`;
+    return `<main><div class="wrap">${bar}<section class="card"><span class="eyebrow">Tailor your plan · ${i} of ${n}</span><h1>${esc(grp.title)}</h1><p class="lede">${lede}</p>${scanQsHTML(grp)}
+      <div class="stepfoot">${i > 1 ? `<button class="btn ghost" data-act="scanprev">‹ Back</button>` : `<button class="btn ghost" data-act="tailorstop">‹ My plan</button>`}
+       <div class="row"><button class="btn ghost" data-act="tailorstop">Finish later</button><button class="btn primary" data-act="scannext">${i < n ? "Continue" : "Done"}</button></div></div></section></div></main>`;
+  }
+  const pages = SCAN_CORE.length + 2;
   const bar = `<div class="progressline" aria-hidden="true">${Array.from({length:pages}, (_, i) => `<span class="${i <= p ? "on" : ""}"></span>`).join("")}</div>`;
   let inner = "";
   if (p === 0) {
     const st = S.settings;
-    inner = `<span class="eyebrow">Before we begin</span><h1>A few things first</h1><p class="lede">You can change any of these later. Everything in the plan is optional.</p>
+    inner = `<span class="eyebrow">Before we begin</span><h1>A few things first</h1><p class="lede">Three quick questions. You can change them later, and everything in the plan is optional.</p>
      <div class="scanq">${subjectFields()}
       <div class="field"><span class="label">Where ${subj() === "me" ? "do you" : "do they"} live?</span>${chipsHTML("set|country", [["AU","Australia"],["NZ","New Zealand"]], st.country, false)}</div>
-      ${st.country === "AU" ? `<div class="field"><span class="label">State or territory</span>${chipsHTML("set|region", AU_STATES, st.region, false)}</div>` : ""}
-      <div class="field"><span class="label">How should we talk to you?</span>${chipsHTML("set|tone", [["soft","Gently"],["neutral","Plainly"],["direct","Straight to the point"]], st.tone, false)}</div>
-      <div class="field"><span class="label">Faith language</span><p class="help">Whether prompts mention prayer, faith leaders and religious readings.</p>${chipsHTML("set|faith", [["include","Include it"],["neutral","Keep it neutral"],["avoid","Leave it out"]], st.faith, false)}</div></div>`;
-  } else if (p <= SCAN.length) {
-    const grp = SCAN[p - 1];
-    inner = `<span class="eyebrow">Life Scan · ${p} of ${SCAN.length}</span><h1>${esc(grp.title)}</h1>
-     <p class="lede">${subj() === "me" ? "Tap what applies. Skip anything you’d rather not answer." : `Answer for ${esc(ownerName())}. If you can, do this together.`}</p>
-     <div class="scanq">${grp.qs.filter(q => !q.show || q.show()).map(q => `<div class="field"><span class="label">${esc(fnv(q.q))}</span>${q.help ? `<p class="help">${esc(fnv(q.help))}</p>` : ""}${chipsHTML("s|" + q.k, fnv(q.opts), S.scan[q.k], !!q.multi)}</div>`).join("")}</div>`;
+      ${st.country === "AU" ? `<div class="field"><span class="label">State or territory</span><p class="help">Legal documents have different names in each state.</p>${chipsHTML("set|region", AU_STATES, st.region, false)}</div>` : ""}</div>`;
+  } else if (p <= SCAN_CORE.length) {
+    const grp = SCAN_CORE[p - 1];
+    inner = `<span class="eyebrow">Life Scan · ${p} of ${SCAN_CORE.length}</span><h1>${esc(grp.title)}</h1><p class="lede">${lede}</p>${scanQsHTML(grp)}`;
   } else {
     const f = F(), why = [];
     if (f.minors || f.depends) why.push("Care for the people who rely on you, from the first hour");
@@ -3378,14 +3513,16 @@ function scanHTML(){
     if (f.vehicles) why.push("Vehicles: keys, rego and what happens to them");
     if (f.places.length) why.push("Safes, storage and boxes, and who can open them");
     if (f.faith) why.push("Faith and cultural timing");
-    const sugs = suggestions();
+    const gapIds = Object.keys(CHECK_TOPIC).filter(k => ["no","partly"].includes((S.check || {})[k])).map(k => CHECK_TOPIC[k]);
+    const first = capOrder().filter(x => gapIds.includes(x.id) && !x.done()).slice(0, 3).map(x => x.title.toLowerCase());
+    const gapsFirst = first.length > 0;
     inner = `<span class="eyebrow">The plan is ready</span><h1>Shaped around ${subj() === "me" ? "your" : esc(ownerName()) + "’s"} life</h1>
      <p class="lede">Five areas: Home, Money, Admin, Family and Personal. Only what applies is included.</p>
      ${why.length ? `<div class="panel"><span class="label">Included because of your answers</span><div class="reasons">${why.map(x => `<div>${esc(x)}</div>`).join("")}</div></div>` : ""}
-     ${sugs.length ? `<div class="panel"><span class="label">${sugs.length} things worth looking at</span><div class="reasons">${sugs.slice(0,4).map(x => `<div>${esc(x.title)}</div>`).join("")}</div><p class="help">These are under Strengthen my plan, with explanations.</p></div>` : ""}
-     <div class="note">Start with the 15-minute essentials: the nine things your family would need first.</div>`;
+     <div class="note">Next: the ${CAP.length} essentials your family would need first, about 15 minutes. ${gapsFirst ? `We’ll start with your people, then what the check showed is missing: ${esc(andJoin(first))}.` : `We’ll start with your people.`}</div>
+     <p class="help">You can tailor the plan further, with ${moreLeft()} optional questions, from My plan.</p>`;
   }
-  const last = p > SCAN.length;
+  const last = p > SCAN_CORE.length;
   return `<main><div class="wrap">${bar}<section class="card">${inner}
     <div class="stepfoot">${p > 0 ? `<button class="btn ghost" data-act="scanprev">‹ Back</button>` : `<button class="btn ghost" data-act="go" data-v="welcome">‹ Back</button>`}
      <div class="row">${last ? `<button class="btn ghost" data-act="scanfinish">Open my plan</button><button class="btn primary" data-act="scanfinish" data-ess="1">Start the essentials</button>` : `${p > 0 ? `<button class="btn ghost" data-act="scannext">Skip this page</button>` : ""}<button class="btn primary" data-act="scannext">Continue</button>`}</div></div></section></div></main>`;
@@ -3520,8 +3657,20 @@ function walletHTML(){
    <p class="help" style="margin-top:14px">Save it as a file, print at actual size, cut it out and keep it behind your licence.</p>`;
 }
 const OUT_TABS = [["hospital","If I’m in hospital"],["first","If I die: first days"],["executor","Executor’s list"],["manual","Household manual"],["wallet","Wallet card"]];
+// Empty sections link straight to where they're filled in, so a summary doubles as a to-do list.
+// The links are left out of saved and printed copies.
+const ADD_AT = [[/^Medical details/, ["personal","health"]], [/^Who can act/, ["personal","act"]], [/^Call these people/, ["personal","who"]], [/^The house/, ["home","access"]],
+  [/^Bills/, ["admin","bills"]], [/^Each week/, ["personal","away"]], [/^Care wishes/, ["personal","care"]], [/^Don’t cancel/, ["admin","keep"]], [/^Spreading the word/, ["personal","who"]],
+  [/^Tell these people/, ["personal","who"]], [/^Who’s in charge/, ["family","everyone"]], [/^The will/, ["admin","docs"]], [/^Wishes in brief/, ["personal","body"]],
+  [/^(Home|Money|Admin|Family|Personal)$/, h => [(CHAPTERS.find(c2 => c2.title === h) || {id:"home"}).id]]];
+function addLinks(html){
+  return html.replace(/(<h2>([^<]*)<\/h2>(?:(?!<h2>)[\s\S])*?)<(p|span) class="none">(Not recorded yet\.|No location recorded yet\.|No recurring costs recorded yet\.|Nothing written yet\.)<\/(?:p|span)>/g, (m0, pre, head, tag, txt) => {
+    const h = head.trim(), hit = ADD_AT.find(([re]) => re.test(h)); if (!hit) return m0;
+    const go2 = typeof hit[1] === "function" ? hit[1](h) : hit[1];
+    return `${pre}<${tag} class="none">${txt} <button type="button" class="addlink" data-act="go" data-v="chapter" data-ch="${go2[0]}"${go2[1] ? ` data-stid="${go2[1]}"` : ""}>Add it ›</button></${tag}>`; });
+}
 function outputsHTML(){
-  const html = {hospital:hospitalDoc, first:firstDaysDoc, executor:executorDoc, manual:manualDoc, wallet:walletHTML}[ui.otab]();
+  const html = addLinks({hospital:hospitalDoc, first:firstDaysDoc, executor:executorDoc, manual:manualDoc, wallet:walletHTML}[ui.otab]());
   return `<div class="wrap"><div><button class="crumb" data-act="go" data-v="family">‹ For my family</button></div>
    <div class="stack"><h1>Printable summaries and cards</h1><p class="lede">Built from what’s written in the plan, and updated as it grows. Letters are never included: each goes only to its person.</p></div>
    <div class="tabs" role="tablist">${OUT_TABS.map(([k,lab]) => `<button role="tab" class="${ui.otab === k ? "on" : ""}" aria-selected="${ui.otab === k}" data-act="otab" data-v="${k}">${esc(lab)}</button>`).join("")}</div>
@@ -3553,7 +3702,9 @@ function openEss(i){
   const [cid, sid] = ESSENTIALS[i], ch = chapterById(cid), idx = stepsOf(ch).findIndex(s => s.id === sid);
   Object.assign(ui, {view:"chapter", chapter:cid, step:Math.max(0, idx), ess:i, open:null, confirmDel:null, navOpen:false}); render(); window.scrollTo(0, 0);
 }
-function freshPlan(subject){ const keepCheck = S.check; S = blank(); S.check = keepCheck || {}; S.started = true; S.settings.subject = subject || "me"; ui.scanPage = 0; save(); go("scan"); }
+function freshPlan(subject){ const keepCheck = S.check; S = blank(); S.check = keepCheck || {}; S.started = true; S.settings.subject = subject || "me";
+  if (subject === "parent") S.settings.textSize = "large";   // easier to read together; changeable in the Menu
+  ui.scanPage = 0; ui.scanMore = false; save(); applyLook(); go("scan"); }
 
 /* ================= actions ================= */
 const ACT = {
@@ -3645,6 +3796,18 @@ const ACT = {
     touched(); save(); rerender(); },
   prm(el){ const b = el.dataset.b, l = plist(getB(b)); l.splice(+el.dataset.i, 1); setB(b, l); touched(); save(); rerender(); },
   pone(el){ const b = el.dataset.b, v = el.dataset.v; setB(b, samePerson(getB(b), v) ? "" : v); touched(); save(); rerender(); },
+  roleadd(el){ const p = S.reg.people.find(x => x.id === el.dataset.pid); if (p && !(p.roles || []).includes(el.dataset.role)) { p.roles = (p.roles || []).concat(el.dataset.role); touched(); save(); rerender(); } },
+  moreopts(el){ ui.allOpts.add(el.dataset.b); rerender(); },
+  entrymore(el){ ui.entryMore.add(el.dataset.id); rerender(); },
+  // The bills tick-list (used when Claude isn't connected).
+  qbill(el){ const t2 = el.dataset.t, ex = S.reg.costs.find(x => typeOf(x) === t2);
+    if (ex) { const bare = !filled(ex.amount) && !ex.outcome && !(ex.seen || []).length && !filled(ex.notes) && !filled(ex.desc);
+      if (!bare) { toast(billName(ex) + " has details, so change it on the bills page"); return; } S.reg.costs = S.reg.costs.filter(x => x !== ex); }
+    else S.reg.costs.push({id:uid(), provider:"", type:t2, billers:[], category:catOfType(t2), amount:"", freq:"Monthly"});
+    touched(); save(); rerender(); },
+  qbillnew(el){ const inp = document.getElementById(el.dataset.inp), n = inp && inp.value.trim(); if (!n) { if (inp) inp.focus(); return; }
+    if (!S.reg.costs.some(x => lc(x.provider) === lc(n))) S.reg.costs.push({id:uid(), provider:n, billers:[n], category:"Other", amount:"", freq:"Monthly"});
+    touched(); save(); rerender(); toast(n + " added"); },
   peq(el){ const b = el.dataset.b, l = plist(getB(b)), n = l.length; if (!n) return;
     const each = Math.floor(10000 / n) / 100; l.forEach((x, i) => { x.pct = pctTxt(i === n - 1 ? 100 - each * (n - 1) : each); }); setB(b, l); touched(); save(); rerender(); },
   fu(el){ const k = el.dataset.k, x = el.dataset.x, y = el.dataset.y;
@@ -3693,10 +3856,12 @@ const ACT = {
       if (items.length) { if (ui.billMode !== "fine") { quickAfterFind(); return; } ui.billStep = "allocate"; }
     } catch(e) { ui.find = {state:"error", items:[], msg:SAMPLE_ERR[e && e.code] || "Something went wrong reading that. Try again, or add things by hand.", src:"ai"}; }
     rerender(); },
-  scannext(){ ui.scanPage++; save(); render(); window.scrollTo(0,0); },
-  scanprev(){ ui.scanPage = Math.max(0, ui.scanPage - 1); render(); window.scrollTo(0,0); },
+  scannext(){ if (ui.scanMore && ui.scanPage >= SCAN_MORE.length) { ACT.tailorstop(true); return; } ui.scanPage++; save(); render(); window.scrollTo(0,0); },
+  scanprev(){ ui.scanPage = Math.max(ui.scanMore ? 1 : 0, ui.scanPage - 1); render(); window.scrollTo(0,0); },
   scanfinish(el){ S.scanDone = true; save(); if (el.dataset.ess) startTalk(firstOpenTopic() || "people", true); else go("today"); },
-  rescan(){ ui.scanPage = 1; go("scan"); },
+  rescan(){ ui.scanMore = false; ui.scanPage = 1; go("scan"); },
+  tailor(){ ui.scanMore = true; ui.scanPage = 1; go("scan"); },
+  tailorstop(done){ ui.scanMore = false; save(); go("overview"); if (done === true) toast("Plan tailored. Anything new is now in your plan."); },
   wtab(el){ ui.wtab = el.dataset.v; ui.open = null; rerender(); },
   otab(el){ ui.otab = el.dataset.v; rerender(); },
   newletter(el){ const pid = el.dataset.pid || "", p = S.reg.people.find(x => x.id === pid), rl = p ? (p.rel || "") : "";
@@ -3751,15 +3916,21 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
   reset(){ ui.confirmReset = true; rerender(); },
   resetno(){ ui.confirmReset = false; rerender(); },
   resetyes(){ S = blank(); ui.confirmReset = false; save(); go("welcome"); toast("The plan has been cleared"); },
+  // Backups: the whole plan (the vault stays encrypted) and the statement transactions, as one JSON file.
+  async backup(){ ui.pop = null;
+    const data = JSON.stringify({app:"FirstLight", kind:"backup", version:1, savedAt:new Date().toISOString(), plan:S, tx:TXPOOL}, null, 1);
+    const ok = await saveAs(`firstlight-backup-${new Date().toISOString().slice(0, 10)}.json`, data, "application/json");
+    if (ok) { S.backedUpAt = Date.now(); save(); rerender(); toast("Backup saved. Keep it somewhere safe, like your email or cloud drive."); } else toast("The backup couldn’t be saved here."); },
+  restoreyes(){ const r2 = ui.restore; if (!r2) return; try { vaultLock(); } catch(e) {}
+    S = hydrate(r2.plan); if (Array.isArray(r2.tx)) { TXPOOL = r2.tx; try { localStorage.setItem(TXK, JSON.stringify(TXPOOL)); } catch(e) {} }
+    ui.restore = null; save(); go(S.scanDone ? "today" : "welcome"); toast("Backup restored"); },
+  restoreno(){ ui.restore = null; rerender(); },
   async savefile(){ const doc = document.getElementById("doc"); if (!doc) return;
-    const css = "@page{size:A4;margin:18mm 20mm 18mm 26mm}body{font-family:Georgia,serif;max-width:720px;margin:32px auto;padding:0 20px;line-height:1.55;color:#17363F}h1{font-weight:500}h2{font-weight:500;border-bottom:1px solid #ccc;padding-bottom:4px;margin-top:28px;break-after:avoid}.lead{font-style:italic;color:#555}.warn{background:#FCEBCB;padding:10px;border-radius:6px}.none{color:#888;font-style:italic}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:8px;border-bottom:1px solid #ccc;vertical-align:top}td.blank{height:44px;border-bottom:1px solid #888}.wallets{display:flex;gap:12px;flex-wrap:wrap}.wallet{width:85.6mm;height:54mm;border:1px solid #999;border-radius:3mm;padding:3mm 4mm;font-family:Arial,sans-serif;font-size:8pt;display:flex;flex-direction:column;gap:1mm;overflow:hidden}.w-band{font-size:6.5pt;letter-spacing:.1em;text-transform:uppercase;font-weight:bold;color:#8A520B}.w-name{font-size:13pt;font-family:Georgia,serif}.w-rows{display:grid;gap:.6mm}.w-rows div{display:grid;grid-template-columns:18mm 1fr;gap:1mm}.w-rows span{color:#777}.help{display:none}";
+    const css = "@page{size:A4;margin:18mm 20mm 18mm 26mm}body{font-family:Georgia,serif;max-width:720px;margin:32px auto;padding:0 20px;line-height:1.55;color:#17363F}h1{font-weight:500}h2{font-weight:500;border-bottom:1px solid #ccc;padding-bottom:4px;margin-top:28px;break-after:avoid}.lead{font-style:italic;color:#555}.warn{background:#FCEBCB;padding:10px;border-radius:6px}.none{color:#888;font-style:italic}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:8px;border-bottom:1px solid #ccc;vertical-align:top}td.blank{height:44px;border-bottom:1px solid #888}.addlink{display:none}.wallets{display:flex;gap:12px;flex-wrap:wrap}.wallet{width:85.6mm;height:54mm;border:1px solid #999;border-radius:3mm;padding:3mm 4mm;font-family:Arial,sans-serif;font-size:8pt;display:flex;flex-direction:column;gap:1mm;overflow:hidden}.w-band{font-size:6.5pt;letter-spacing:.1em;text-transform:uppercase;font-weight:bold;color:#8A520B}.w-name{font-size:13pt;font-family:Georgia,serif}.w-rows{display:grid;gap:.6mm}.w-rows div{display:grid;grid-template-columns:18mm 1fr;gap:1mm}.w-rows span{color:#777}.help{display:none}";
     const names2 = {hospital:"hospital-summary", first:"first-days-guide", executor:"executors-list", manual:"household-manual", wallet:"wallet-card"};
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(OUT_TABS.find(x => x[0] === ui.otab)[1])}</title><style>${css}</style></head><body>${doc.innerHTML}</body></html>`;
-    try { const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
-      if (!dl) { toast("Saving files isn’t available here."); return; }
-      await dl.save({filename:names2[ui.otab] + ".html", data:html}); toast("Saved. Open it and print from your browser.");
-    } catch(e) { if (!e || e.code !== "declined") toast("The file couldn’t be saved here."); } },
-  copydoc(){ const doc = document.getElementById("doc"); if (!doc) return; const txt = doc.innerText;
+    if (await saveAs(names2[ui.otab] + ".html", html, "text/html")) toast("Saved. Open it and print from your browser."); else toast("The file couldn’t be saved here."); },
+  copydoc(){ const doc = document.getElementById("doc"); if (!doc) return; const txt = doc.innerText.replace(/\s*Add it ›/g, "");
     try { navigator.clipboard.writeText(txt).then(() => toast("Copied"), () => selectDoc(doc)); } catch(e) { selectDoc(doc); } },
   bstep(el){ ui.billStep = el.dataset.v; ui.open = null; render(); const c2 = document.getElementById("stepcard"); if (c2) window.scrollTo(0, Math.max(0, c2.getBoundingClientRect().top + window.scrollY - 120)); },
   seltype(el){ const t2 = el.dataset.t; selectType(t2, !isSelected(t2)); save(); rerender(); },
@@ -3868,6 +4039,13 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
   vwipeyes(){ V.key = null; V.items = []; V.confirmWipe = false; S.vault = null; save(); rerender(); toast("The vault has been deleted"); },
   noop(){}
 };
+// Save a file: through Claude's downloads when this runs as an artifact, otherwise a normal browser download.
+async function saveAs(filename, data, type){
+  try { const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) { await dl.save({filename, data}); return true; } } catch(e) { if (e && e.code === "declined") return false; }
+  try { const url = URL.createObjectURL(new Blob([data], {type:type || "text/plain"})), a2 = document.createElement("a");
+    a2.href = url; a2.download = filename; document.body.appendChild(a2); a2.click(); a2.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000); return true; } catch(e) { return false; }
+}
 function selectDoc(doc){ const rg = document.createRange(); rg.selectNodeContents(doc); const s = window.getSelection(); s.removeAllRanges(); s.addRange(rg); toast("Text selected. Press Ctrl+C or Cmd+C to copy."); }
 
 document.addEventListener("click", e => {
@@ -3909,12 +4087,21 @@ document.addEventListener("change", e => {
     return;
   }
   if (el.id === "photo_in" && el.files && el.files[0]) { ui.photo = el.files[0]; rerender(); return; }
+  if ((el.id === "restore_in" || el.id === "restore_in2") && el.files && el.files[0]) { const f = el.files[0]; el.value = ""; ui.pop = null;
+    f.text().then(txt => { let j = null; try { j = JSON.parse(txt); } catch(e) {}
+      const plan = j && (j.plan || (j.reg && j.settings ? j : null));
+      if (!plan || typeof plan !== "object" || !plan.reg) { toast("That file isn’t a FirstLight backup."); return; }
+      ui.restore = {plan, tx:j.tx, savedAt:j.savedAt || "", name:(plan.settings && (plan.settings.subject === "me" ? plan.settings.name : plan.settings.subjectName)) || ""};
+      if (!S.started) { ACT.restoreyes(); return; }
+      go("settings"); setTimeout(() => { const c2 = document.getElementById("datacard"); if (c2) c2.scrollIntoView({block:"center"}); }, 30); }, () => toast("That file couldn’t be read."));
+    return; }
   if (el.id === "cap_photo" && el.files && el.files[0] && ui.cap) { ui.cap.img = el.files[0]; ui.cap.imgUrl = URL.createObjectURL(el.files[0]); rerender(); return; }
   if (el.id === "walk_photo" && el.files && el.files[0] && ui.walk) { const s = WALK[ui.walk.i], f = el.files[0]; if (!s) return;
     shrinkPhoto(f).then(b => phPut("walk:" + s.id, b)).then(() => { if (PH.urls["walk:" + s.id]) { URL.revokeObjectURL(PH.urls["walk:" + s.id]); delete PH.urls["walk:" + s.id]; }
       S.house = S.house || {}; S.house[s.id] = Object.assign(S.house[s.id] || {note:""}, {photo:true, at:Date.now()}); save(); rerender(); toast("Photo saved on this device"); },
       () => toast("That photo couldn’t be saved on this device. Write a sentence instead.")); return; }
   if (el.id === "home_photo" && el.files && el.files[0]) { ui.homeImg = el.files[0]; ui.homeImgUrl = URL.createObjectURL(el.files[0]); ACT.homesend(); return; }
+  if (el.dataset.stepsel) { ACT.step({dataset:{st:el.value}}); return; }
   if (el.dataset.bcat) { ui.bCat[el.dataset.bcat] = el.value; rerender(); return; }
   if (el.dataset.acat !== undefined) { const x = ui.find.items[+el.dataset.acat]; if (x) { x.alloc = {cat:el.value, type:""}; x.predicted = false;
       const sel = (selectedTypes()[el.value] || []); if (sel.length === 1) x.alloc.type = sel[0]; } rerender(); return; }
@@ -3930,10 +4117,11 @@ document.addEventListener("change", e => {
 document.addEventListener("toggle", e => { const el = e.target; if (el && el.dataset && el.dataset.keep) ui.openDet[el.dataset.keep] = el.open; }, true);
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.id === "vpu") { e.preventDefault(); ACT.vunlock(); return; }
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("label[for^=restore_in]")) { e.preventDefault(); e.target.click(); return; }
   if (e.key === "Enter" && !e.shiftKey && (e.target.id === "home_text" || e.target.id === "cap_text") && !window.matchMedia("(pointer:coarse)").matches) { e.preventDefault(); e.target.id === "home_text" ? ACT.homesend() : capSend(); return; }
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "ask_text") { e.preventDefault(); askPlan(); return; }
   if (e.key === "Escape" && ui.pop) { ui.pop = null; rerender(); return; }
-  if (e.key === "Enter" && e.target.matches && e.target.matches(".pf-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=pnew]"); if (btn) ACT.pnew(btn); return; }
+  if (e.key === "Enter" && e.target.matches && e.target.matches(".pf-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=pnew], [data-act=qbillnew], [data-act=newrole]"); if (btn) ACT[btn.dataset.act](btn); return; }
   if (e.key === "Enter" && e.target.matches && e.target.matches(".role-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=newrole]"); if (btn) ACT.newrole(btn); }
 });
 
