@@ -32,11 +32,14 @@ $failed = 0
 
 if ($Only) { $SkipCrawl = $true }
 if (-not $SkipCrawl) {
-  foreach ($run in @(@('crawl-example','', "<script>window.__SITMODE='example';</script>"),
-                     @('crawl-fresh','', "<script>window.__SITMODE='fresh';</script>"),
-                     @('crawl-parent','', "<script>window.__SITMODE='parent';</script>"),
-                     @('crawl-ai-1', $mock2, "<script>window.__SITMODE='example';window.__SITFROM=0;window.__SITTO=45;</script>"),
-                     @('crawl-ai-2', $mock2, "<script>window.__SITMODE='example';window.__SITFROM=45;window.__SITTO=200;</script>"))) {
+  # Each crawl runs in two parts: the test browser stops after a few thousand clicks in one page.
+  $runs = @()
+  foreach ($m in @(@('example',''), @('fresh',''), @('parent',''), @('ai',$mock2))) {
+    $mode = if ($m[0] -eq 'ai') { 'example' } else { $m[0] }
+    $runs += ,@("crawl-$($m[0])-1", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=0;window.__SITTO=45;</script>")
+    $runs += ,@("crawl-$($m[0])-2", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=45;window.__SITTO=999;</script>")
+  }
+  foreach ($run in $runs) {
     $r = Run-Page $run[0] $run[1] ($run[2] + "<script src='sit.js'></script>") 'data-sit' 3000000
     if ($r -notmatch '"errors":0') { $failed++ }
     "{0,-14} {1}" -f $run[0], $r

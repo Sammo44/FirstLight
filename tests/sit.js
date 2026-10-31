@@ -9,7 +9,7 @@ const tick=(ms)=>new Promise(r=>setTimeout(r,ms||0));
 const mk=a=>{const b=document.createElement('button');b.className='__sit';Object.entries(a).forEach(([k,v])=>b.dataset[k]=v);document.body.appendChild(b);click(b);b.remove();};
 const EXCL=new Set(['start','startparent','example','resetyes','savefile','copydoc','vunlock','vsetup','vreset','vresetyes','aread']);
 const MODE=(document.currentScript&&document.currentScript.dataset.mode)||window.__SITMODE||'example';
-let clicks=0, fields=0, views=0; const blank=[];
+let clicks=0, fields=0, views=0, part=''; const blank=[];
 async function crawl(name, nav){
   where=name; views++;
   try{ await nav(); }catch(e){ errs.push(name+' :: nav '+e.message); return; }
@@ -67,11 +67,16 @@ setTimeout(async()=>{
   V.push(['bills quick',async()=>{mk({act:'go',v:'chapter',ch:'admin',stid:'bills'}); await tick(); mk({act:'bmode',v:'quick'});}]);
   V.push(['bills swipe',async()=>{mk({act:'go',v:'chapter',ch:'admin',stid:'bills'}); await tick(); mk({act:'bmode',v:'quick'}); await tick(); mk({act:'swipestart'});}]);
   V.push(['welcome',()=>mk({act:'go',v:'welcome'})]);
-  const FROM=window.__SITFROM||0, TO=window.__SITTO||V.length; for(const [n,f] of V.slice(FROM,TO)) await crawl(n,f); if(FROM>0||TO<V.length){ document.body.setAttribute('data-sit',JSON.stringify({part:FROM+'-'+TO,of:V.length,views,clicks,fields,errors:[...new Set(errs)].length,errs:[...new Set(errs)].slice(0,40),blank})); return; }
-  // scan pages last (rescan changes nothing destructive)
-  for(let p=0;p<7;p++) await crawl('scan page '+p,async()=>{mk({act:'rescan'}); await tick(); for(let k=0;k<p;k++){ click(all('[data-act=scannext]').pop()); await tick(); }});
+  // Long runs are split into parts (__SITFROM / __SITTO), because the test browser stops after a few thousand clicks.
+  const FROM=window.__SITFROM||0, TO=Math.min(window.__SITTO||V.length, V.length); for(const [n,f] of V.slice(FROM,TO)) await crawl(n,f);
+  // The last part also does the Life Scan pages and "Tailor your plan" (rescan and tailor change nothing destructive).
+  if(TO>=V.length){
+    for(let p=0;p<4;p++) await crawl('scan page '+p,async()=>{mk({act:'rescan'}); await tick(); for(let k=0;k<p;k++){ click(all('[data-act=scannext]').pop()); await tick(); }});
+    for(let p=1;p<=3;p++) await crawl('tailor page '+p,async()=>{mk({act:'tailor'}); await tick(); for(let k=1;k<p;k++){ click(all('[data-act=scannext]').pop()); await tick(); }});
+  }
+  part=(FROM>0||TO<V.length)?FROM+'-'+TO+' of '+V.length:'';
  }catch(e){ errs.push('crawler :: '+e.message+' '+(e.stack||'').split('\n')[1]); }
  const uniq=[...new Set(errs)];
- document.body.setAttribute('data-sit',JSON.stringify({mode:MODE,views,clicks,fields,errors:uniq.length,errs:uniq.slice(0,60),blank:blank.slice(0,20)}));
+ document.body.setAttribute('data-sit',JSON.stringify({mode:MODE,part,views,clicks,fields,errors:uniq.length,errs:uniq.slice(0,60),blank:blank.slice(0,20)}));
 },400);
 })();

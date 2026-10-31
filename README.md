@@ -59,7 +59,7 @@ The tests run in headless Microsoft Edge on Windows:
 ./tests/run-tests.ps1
 ```
 
-- **System crawl (`sit.js`):** visits every screen, presses every safe button, types into every field and changes every dropdown, on the example plan, a fresh plan and a parent plan. It also runs with a stand-in for Claude. It reports any error or blank screen.
+- **System crawl (`sit.js`):** visits every screen, presses every safe button, types into every field and changes every dropdown, on the example plan, a fresh plan and a parent plan. It also runs with a stand-in for Claude. It reports any error or blank screen. Each crawl runs in two parts, because the test browser stops after a few thousand clicks in one page.
 - **Feature suites:** CSV parsing and outputs (`harness2.js`), conversational capture (`talk.js`), Letters and words (`words.js`, `letters.js`), family view and Ask (`fam.js`), house walk and Sunday mode (`walk.js`), beneficiaries and shares (`people.js`), older plans that stored names as text (`legacy.js`), the quick start, offline paths, backups and layout (`ux.js`), and bills one card at a time (`bq.js`).
 - Run some suites only with `./tests/run-tests.ps1 -Only people,legacy`.
 - **`bq.js` needs real-looking statements.** Put them in `tests/fixtures/statements.js` as `window.__files = [{name, text}, …]`. That folder is git-ignored, so personal statements never end up in the repo.
