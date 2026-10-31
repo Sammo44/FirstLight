@@ -67,7 +67,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .places button{background:none;border:0;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.95rem;color:var(--muted);font-weight:500}
 .places button:hover{color:var(--ink);background:var(--bg)}
 .places button.on{color:var(--ink);background:var(--dusk)}
-.tabbar{display:none}
+.mnav,.who-m,.pop .m-only{display:none}
 .topbtn{background:none;border:1px solid transparent;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:.92rem;color:var(--muted);font-weight:600;min-width:40px;min-height:36px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:480px){ .top .savestate{display:none} .topbtn{max-width:120px;padding:6px 8px} .top{gap:8px} }
 .topbtn:hover,.topbtn[aria-expanded="true"]{color:var(--ink);border-color:var(--line);background:var(--raised)}
@@ -76,15 +76,18 @@ button,input,textarea,select{font:inherit;color:inherit}
 .pop .menu{display:grid;gap:2px}
 .pop .menu button{background:none;border:0;text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:.95rem}
 .pop .menu button:hover{background:var(--bg)}
+/* Phones: the three places become a labelled row at the top, and the name button becomes "Menu" (with text size and look inside). */
 @media (max-width:760px){
-  .places{display:none}
-  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));justify-content:space-around}
-  .tabbar button{flex:1;background:none;border:0;padding:8px 4px;border-radius:10px;cursor:pointer;font-size:.8rem;color:var(--muted);font-weight:500;display:grid;justify-items:center;gap:2px;min-height:48px}
-  .tabbar button.on{color:var(--ink);font-weight:600}
-  .tabbar button.on .ti{background:var(--dusk)}
-  .tabbar .ti{width:44px;height:26px;border-radius:99px;display:grid;place-items:center}
-  main{padding-bottom:110px !important}
+  .places,.top .aa-btn,.top .who-full{display:none}
+  .top{flex-wrap:wrap;row-gap:8px;padding-block:8px}
+  .mnav{display:flex;flex-basis:100%;gap:3px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
+  .mnav button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;background:none;border:0;border-radius:9px;padding:7px 4px;min-height:40px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--muted);white-space:nowrap}
+  .mnav button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(14,38,48,.14)}
+  .who-m{display:inline-flex;align-items:center;gap:6px}
+  .topbtn.menu{border-color:var(--line);color:var(--ink);padding:6px 12px;max-width:none}
+  .pop .m-only{display:grid;gap:10px}
 }
+@media (max-width:420px){ .mnav svg{display:none} .mnav button{font-size:.86rem} }
 .shell{display:block}
 
 /* Today */
@@ -2444,7 +2447,11 @@ function topHTML(minimal){
   const aa = ui.pop === "aa" ? `<div class="pop" role="dialog" aria-label="Text size and look">
       <div class="stack" style="gap:6px"><span class="label">Text size</span>${chipsHTML("set|textSize", [["standard","Standard"],["large","Large"],["largest","Largest"]], sz, false)}</div>
       <div class="stack" style="gap:6px"><span class="label">Look</span>${chipsHTML("set|theme", [["light","Daylight"],["dark","Dusk"],["auto","Match my device"]], th, false)}</div></div>` : "";
-  const you = ui.pop === "you" ? `<div class="pop" role="menu" aria-label="${esc(planName())}"><div class="menu">
+  const you = ui.pop === "you" ? `<div class="pop" role="dialog" aria-label="Menu">
+      <div class="m-only"><span class="label">${esc(planName())}</span>
+        <div class="stack" style="gap:6px"><span class="small muted">Text size</span>${chipsHTML("set|textSize", [["standard","Standard"],["large","Large"],["largest","Largest"]], sz, false)}</div>
+        <div class="stack" style="gap:6px"><span class="small muted">Look</span>${chipsHTML("set|theme", [["light","Daylight"],["dark","Dusk"],["auto","Match my device"]], th, false)}</div></div>
+      <div class="menu">
       <button role="menuitem" data-act="go" data-v="settings">Settings</button>
       <button role="menuitem" data-act="go" data-v="chapter" data-ch="admin" data-stid="vault">The vault</button>
       <button role="menuitem" data-act="go" data-v="strengthen">Strengthen my plan</button>
@@ -2454,12 +2461,9 @@ function topHTML(minimal){
    <button class="brand" data-act="go" data-v="${S.scanDone ? "today" : "welcome"}"><span class="mark" aria-hidden="true"></span><b>FirstLight</b></button>
    ${minimal ? "" : `<nav class="places" aria-label="Main">${places}</nav>`}
    <span class="spacer"></span><span class="savestate" id="savestate">${esc(saveLabel)}</span>
-   ${minimal ? "" : `<button class="topbtn" data-act="pop" data-v="aa" aria-expanded="${ui.pop === "aa"}" aria-label="Text size and look">Aa</button>
-   <button class="topbtn" data-act="pop" data-v="you" aria-expanded="${ui.pop === "you"}">${esc(subj() === "me" ? (S.settings.name || "You") : planName())} ▾</button>`}${aa}${you}</header>`;
-}
-function tabbarHTML(){
-  const here = placeOf(ui.view);
-  return `<nav class="tabbar" aria-label="Main">${PLACES.map(([v, lab]) => `<button class="${here === v ? "on" : ""}" data-act="go" data-v="${v}"${here === v ? ` aria-current="page"` : ""}><span class="ti">${PLACE_ICON[v]}</span>${esc(lab)}</button>`).join("")}</nav>`;
+   ${minimal ? "" : `<button class="topbtn aa-btn" data-act="pop" data-v="aa" aria-expanded="${ui.pop === "aa"}" aria-label="Text size and look">Aa</button>
+   <button class="topbtn menu" data-act="pop" data-v="you" aria-expanded="${ui.pop === "you"}"><span class="who-full">${esc(subj() === "me" ? (S.settings.name || "You") : planName())} ▾</span><span class="who-m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Menu</span></button>
+   <nav class="mnav" aria-label="Main">${PLACES.map(([v, lab]) => `<button class="${here === v ? "on" : ""}" data-act="go" data-v="${v}"${here === v ? ` aria-current="page"` : ""}>${PLACE_ICON[v]}${esc(lab)}</button>`).join("")}</nav>`}${aa}${you}</header>`;
 }
 // Text size and look apply to the whole page. "Match my device" leaves the viewer's own choice alone.
 function applyLook(){
@@ -3455,7 +3459,7 @@ function render(){
   else if (ui.view === "scan") app.innerHTML = topHTML(true) + scanHTML();
   else {
     const views = {today:todayHTML, talk:talkHTML, walk:walkHTML, sunday:sundayHTML, family:familyHTML, famview:famViewHTML, overview:overviewHTML, chapter:chapterHTML, words:wordsHTML, strengthen:strengthenHTML, review:reviewHTML, release:releaseHTML, settings:settingsHTML, outputs:outputsHTML};
-    app.innerHTML = topHTML(false) + `<div class="shell"><main>${(views[ui.view] || todayHTML)()}</main></div>` + tabbarHTML();
+    app.innerHTML = topHTML(false) + `<div class="shell"><main>${(views[ui.view] || todayHTML)()}</main></div>`;
   }
   applyLook(); hydratePhotos();
   document.querySelectorAll("textarea.letter").forEach(el => { const box = document.getElementById("as_" + el.id); if (box) box.innerHTML = assistHTML(el.value, el.id, false); });
