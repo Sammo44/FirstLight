@@ -10,7 +10,9 @@ This repository holds a working, single-file prototype plus the design work behi
 
 | Path | What it is |
 |---|---|
-| `index.html` | The whole prototype: one HTML file with its own CSS and JavaScript. No build step. |
+| `app/firstlight.html` | The whole prototype: one HTML file with its own CSS and JavaScript. This is the file published as the Claude artifact. |
+| `index.html` | The same app with a standard page head (doctype, charset and the mobile viewport), for GitHub Pages. Built by `build-index.ps1`. Don't edit it by hand. |
+| `build-index.ps1` | Rebuilds `index.html` from `app/firstlight.html`. Run it after changing the app. |
 | `docs/design-review.html` | The UX and CX review that led to the current design. |
 | `docs/blueprint-v3.md` | The earlier product blueprint (from when it was called After Me, For You). |
 | `design/canvas/` | Source for the naming, logo, tagline and palette exploration boards. |
@@ -18,7 +20,7 @@ This repository holds a working, single-file prototype plus the design work behi
 
 ## Running it
 
-Open `index.html` in a browser. Everything works without a server.
+Open `index.html` in a browser, or visit **https://sammo44.github.io/FirstLight/**. Everything works without a server.
 
 - **On its own** (a file, or GitHub Pages): plans are saved in that browser's local storage. The conversational features fall back to plain forms, and Ask the plan finds matching notes in the plan.
 - **As a Claude artifact**: plans are saved privately to each person's Claude account, and the conversational capture, photo reading, follow-up questions and Ask the plan use the viewer's own Claude account.
