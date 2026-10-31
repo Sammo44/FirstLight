@@ -1,6 +1,6 @@
 # Runs the FirstLight test suites in headless Microsoft Edge.
 # Each test page is index.html with a test script (and, where needed, a stand-in for Claude) added at the end.
-param([switch]$SkipCrawl)
+param([switch]$SkipCrawl, [string[]]$Only)
 
 $root  = Split-Path $PSScriptRoot -Parent
 $out   = Join-Path $PSScriptRoot "out"
@@ -29,6 +29,7 @@ $mock  = "<script src='mockclaude.js'></script>"
 $mock2 = "<script src='mockclaude2.js'></script>"
 $failed = 0
 
+if ($Only) { $SkipCrawl = $true }
 if (-not $SkipCrawl) {
   foreach ($run in @(@('crawl-example','', "<script>window.__SITMODE='example';</script>"),
                      @('crawl-fresh','', "<script>window.__SITMODE='fresh';</script>"),
@@ -46,9 +47,12 @@ $suites = @(@('regression','', "<script src='harness2.js'></script>", 'data-test
             @('words', $mock, "<script src='words.js'></script>", 'data-r'),
             @('letters', '', "<script src='letters.js'></script>", 'data-r'),
             @('family', '', "<script src='fam.js'></script>", 'data-r'),
-            @('walk', '', "<script src='walk.js'></script>", 'data-r'))
+            @('walk', '', "<script src='walk.js'></script>", 'data-r'),
+            @('people', '', "<script src='people.js'></script>", 'data-r'),
+            @('legacy', "<script src='legacy.js'></script>", '', 'data-r'))
 if (Test-Path $fixture) { $suites += ,@('bills', '', "<script src='statements.js'></script><script src='bq.js'></script>", 'data-r') }
 else { "bills          skipped: add tests/fixtures/statements.js to run it" }
+if ($Only) { $suites = @($suites | Where-Object { $Only -contains $_[0] }) }
 
 foreach ($t in $suites) {
   $r = Run-Page $t[0] $t[1] $t[2] $t[3] 200000

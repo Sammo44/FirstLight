@@ -27,7 +27,8 @@ Open `index.html` in a browser, or visit **https://sammo44.github.io/FirstLight/
 
 ## Main features
 
-- **Three places:** Today, My plan and For my family. A bottom tab bar on phones.
+- **Three places:** Today, My plan and For my family. On phones they sit in a labelled row at the top, next to a Menu button.
+- **People, picked not typed:** beneficiaries, joint owners, heirlooms and hand-overs are chosen from the people already in the plan (or someone new). Super, insurance and assets take several beneficiaries, each with a share, and the plan checks the shares add up to 100%.
 - **Today:** readiness written as outcomes ("If you were in hospital tonight, Jo could…"), one next step, and a *Tell me anything* box.
 - **Say it or snap it:** ten conversational questions for the essentials. Claude pulls out the facts and shows a *Here's what I heard* card. Nothing is saved until the person confirms.
 - **Bills in a minute:** upload bank and card statements (CSV, read on the device), then decide each biller one card at a time: cancel, keep or hand on. The full four-step flow sits under *Fine-tune*.
@@ -55,7 +56,8 @@ The tests run in headless Microsoft Edge on Windows:
 ```
 
 - **System crawl (`sit.js`):** visits every screen, presses every safe button, types into every field and changes every dropdown, on the example plan, a fresh plan and a parent plan. It also runs with a stand-in for Claude. It reports any error or blank screen.
-- **Feature suites:** CSV parsing and outputs (`harness2.js`), conversational capture (`talk.js`), Letters and words (`words.js`, `letters.js`), family view and Ask (`fam.js`), house walk and Sunday mode (`walk.js`), and bills one card at a time (`bq.js`).
+- **Feature suites:** CSV parsing and outputs (`harness2.js`), conversational capture (`talk.js`), Letters and words (`words.js`, `letters.js`), family view and Ask (`fam.js`), house walk and Sunday mode (`walk.js`), beneficiaries and shares (`people.js`), older plans that stored names as text (`legacy.js`), and bills one card at a time (`bq.js`).
+- Run some suites only with `./tests/run-tests.ps1 -Only people,legacy`.
 - **`bq.js` needs real-looking statements.** Put them in `tests/fixtures/statements.js` as `window.__files = [{name, text}, …]`. That folder is git-ignored, so personal statements never end up in the repo.
 - `mockclaude.js` and `mockclaude2.js` stand in for Claude, so the AI paths can be tested offline.
 

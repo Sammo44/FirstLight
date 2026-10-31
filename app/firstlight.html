@@ -291,6 +291,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--lamp);outline:none;bo
 .holder button:hover{background:var(--raised)}
 .role-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
 @media (max-width:560px){.role-add{grid-template-columns:1fr}}
+/* People fields: one row per person, with their share when it's split. */
+.pf .prows{display:grid;gap:6px}
+.prow{display:flex;align-items:center;gap:10px;background:var(--calm-soft);border-radius:12px;padding:6px 6px 6px 14px;min-height:46px}
+.prow .pname{flex:1;min-width:0;font-weight:500;color:var(--calm);overflow-wrap:anywhere}
+.ppct{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600}
+.ppct input{width:68px;text-align:right;padding:6px 8px}
+.prow .px{flex:none;border:0;background:none;color:var(--calm);cursor:pointer;width:34px;height:34px;border-radius:50%;font-size:1.15rem;line-height:1}
+.prow .px:hover{background:var(--raised)}
+.ptotal{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pok{color:var(--calm);font-weight:600}
+.pwarn{color:var(--lamp-ink);font-weight:600}
+.role-add.pf-add{grid-template-columns:minmax(0,1fr) auto}
 
 .assist:empty{display:none}
 .assist{display:flex;flex-direction:column;gap:8px}
@@ -598,6 +610,63 @@ const c = (k,label,opts,o={}) => ({k,label,type:"choice",opts,...o});
 const m = (k,label,opts,o={}) => ({k,label,type:"multi",opts,...o});
 const r = (role,label,o={}) => ({k:"_role_"+role,role,label,type:"role",...o});
 const d = (k,label,o={}) => ({k,label,type:"date",...o});
+// People fields: picked from the people already in the plan, or typed. o.split: each person gets a share, adding to 100%.
+// o.one: just one person, stored as a plain name. o.pros: professionals can be picked too. o.extra: other choices, like "My estate".
+const p = (k,label,o={}) => ({k,label,type:"people",...o});
+
+/* ================= people and shares ================= */
+// A people value as a list of {name, pct}. Older plans stored text, like "Jo" or "Jo 50%, Sam 30% and Mia 20%".
+function plist(v){
+  if (Array.isArray(v)) return v.filter(x => x && filled(x.name)).map(x => ({name:String(x.name).trim(), pct:x.pct == null ? "" : String(x.pct)}));
+  if (!filled(v)) return [];
+  return String(v).split(/\s*(?:,|;|&|\+|\band\b)\s*/i).map(s => s.trim()).filter(Boolean).map(s => {
+    const m2 = s.match(/^(.*?)\s*\(?\s*(\d{1,3}(?:\.\d+)?)\s*%\s*\)?$/); return m2 && m2[1] ? {name:m2[1].trim(), pct:m2[2]} : {name:s, pct:""}; });
+}
+const pctOf = x => { const n = parseFloat(String(x.pct == null ? "" : x.pct).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : null; };
+const pctTxt = n => String(+n.toFixed(2));
+const andJoin = xs => xs.length < 2 ? (xs[0] || "") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
+// "Jo Morgan 60%, Mia 20% and Tom 20%". A share is only shown when there's more than one person.
+function whoText(v){ const l = plist(v); return andJoin(l.map(x => x.name + (l.length > 1 && pctOf(x) != null ? " " + pctTxt(pctOf(x)) + "%" : ""))); }
+// "Jo" and "Jo Morgan" are the same person; "Jo Morgan" and "Jo Smith" aren't.
+const samePerson = (x, y) => { const a2 = lc(String(x || "").trim()), b2 = lc(String(y || "").trim()); if (!a2 || !b2) return false;
+  return a2 === b2 || (!a2.includes(" ") && b2.split(" ")[0] === a2) || (!b2.includes(" ") && a2.split(" ")[0] === b2); };
+// Everyone the plan already knows about: the people list first, then names typed into other people fields.
+function knownNames(pros){
+  const out = [], addN = n => { n = String(n || "").trim(); if (n && !out.some(o => samePerson(o, n))) out.push(n); };
+  S.reg.people.filter(q => pros || !(q.roles || []).includes("professional")).forEach(q => addN(q.name));
+  Object.keys(REG).forEach(rg => { const fs = REG[rg].fields().filter(f => f.type === "people" && !f.pros);
+    if (fs.length) (S.reg[rg] || []).forEach(it => fs.forEach(f => f.one ? addN(typeof it[f.k] === "string" ? it[f.k] : "") : plist(it[f.k]).forEach(x => addN(x.name)))); });
+  return out;
+}
+function ptotalHTML(l, b){
+  const ns = l.map(pctOf), tot = Math.round(ns.reduce((s, v) => s + (v || 0), 0) * 100) / 100;
+  const eq = `<button type="button" class="btn sm ghost" data-act="peq" data-b="${esc(b)}">Split equally</button>`;
+  if (!ns.some(v => v != null)) return `<span class="small muted">Add each person’s share, or split it equally.</span>${eq}`;
+  const blank = l.filter((x, i) => ns[i] == null).map(x => x.name);
+  if (blank.length) return `<span class="small pwarn">${esc(andJoin(blank))} ${blank.length === 1 ? "doesn’t" : "don’t"} have a share yet.${Math.abs(tot - 100) < 0.01 ? "" : " The others add up to " + pctTxt(tot) + "%."}</span>${eq}`;
+  if (Math.abs(tot - 100) < 0.01) return `<span class="small pok">✓ The shares add up to 100%</span>`;
+  return `<span class="small pwarn">The shares add up to ${pctTxt(tot)}%. ${tot < 100 ? pctTxt(100 - tot) + "% still to give." : "That’s " + pctTxt(tot - 100) + "% too much."}</span>${eq}`;
+}
+const bid = b => String(b).replace(/[^a-zA-Z0-9]/g, "_");
+function peopleHTML(b, f, val){
+  const id = "pf" + (++fidN), help = f.help ? `<p class="help">${esc(fnv(f.help))}</p>` : "";
+  const known = knownNames(f.pros), names2 = known.concat((f.extra ? fnv(f.extra) : []).filter(n => !known.some(k2 => samePerson(k2, n))));
+  const addRow = `<div class="role-add pf-add"><input type="text" id="${id}" placeholder="${names2.length ? "Or someone else" : "Their name"}" aria-label="Someone else’s name"><button type="button" class="btn sm" data-act="pnew" data-b="${esc(b)}" data-inp="${id}"${f.one ? ` data-one="1"` : ""}>Add</button></div>`;
+  if (f.one) {
+    const cur = String(Array.isArray(val) ? whoText(val) : val || "").trim(), opts = names2.slice();
+    if (cur && !opts.some(n => samePerson(n, cur))) opts.unshift(cur);
+    const chips = opts.map(n => { const on = samePerson(n, cur);
+      return `<button type="button" class="chip${on ? " on" : ""}" aria-pressed="${on}" data-act="pone" data-b="${esc(b)}" data-v="${esc(n)}">${esc(n)}</button>`; }).join("");
+    return `<div class="field pf"><span class="label">${esc(fnv(f.label))}</span>${help}${chips ? `<div class="chips" role="group">${chips}</div>` : ""}${addRow}</div>`;
+  }
+  const l = plist(val), rest = names2.filter(n => !l.some(x => samePerson(x.name, n)));
+  const rows = l.map((x, i) => `<div class="prow"><span class="pname">${esc(x.name)}</span>${f.split ? `<span class="ppct"><input type="text" inputmode="decimal" maxlength="6" data-pct="${esc(b)}" data-i="${i}" value="${esc(x.pct)}" placeholder="${l.length === 1 ? "100" : "0"}" aria-label="${esc(x.name)}’s share, as a percentage"><span aria-hidden="true">%</span></span>` : ""}<button type="button" class="px" data-act="prm" data-b="${esc(b)}" data-i="${i}" aria-label="Remove ${esc(x.name)}">×</button></div>`).join("");
+  return `<div class="field pf"><span class="label">${esc(fnv(f.label))}</span>${help}
+    ${l.length ? `<div class="prows">${rows}</div>` : ""}
+    ${f.split && l.length > 1 ? `<div class="ptotal" id="pt_${bid(b)}">${ptotalHTML(l, b)}</div>` : ""}
+    ${rest.length ? `<div class="chips" role="group" aria-label="Add from your people">${rest.map(n => `<button type="button" class="chip add" data-act="padd" data-b="${esc(b)}" data-v="${esc(n)}">+ ${esc(n)}</button>`).join("")}</div>` : ""}
+    ${addRow}</div>`;
+}
 
 /* ================= continuity check ================= */
 const CHECK = [
@@ -729,33 +798,34 @@ const costsTotal = () => S.reg.costs.reduce((s,x) => s + perMonth(x), 0);
 const REG = {
   people:{noun:"person", title:x => x.name, sub:x => [x.rel, (x.roles || []).filter(q => q !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · "),
     fields:() => [t("name","Name"), t("rel","Relationship or role",{ph:"e.g. Sister, Lawyer, Neighbour"}), t("phone","Phone"), t("email","Email"), m("roles","Roles",ROLES), a("notes","Notes",{smart:true})]},
-  accounts:{noun:"account", title:x => x.inst, sub:x => [x.type, x.type !== "Credit card" && x.bsb && "BSB " + x.bsb, acctTail(x) && "••" + acctTail(x), x.owner === "Joint" ? "Joint" + (x.jointWith ? " with " + x.jointWith : "") : x.owner].filter(Boolean).join(" · "),
+  accounts:{noun:"account", title:x => x.inst, sub:x => [x.type, x.type !== "Credit card" && x.bsb && "BSB " + x.bsb, acctTail(x) && "••" + acctTail(x), x.owner === "Joint" ? "Joint" + (filled(x.jointWith) ? " with " + whoText(x.jointWith) : "") : x.owner].filter(Boolean).join(" · "),
     presets:() => (L().nz ? ["ANZ","ASB","BNZ","Westpac","Kiwibank","Co-operative Bank","TSB","Rabobank"] : ["Commonwealth Bank","Westpac","NAB","ANZ","ING","Macquarie","Bendigo Bank","Suncorp","Up"]).map(n => ({label:n, data:{inst:n}})),
     fields:() => [t("inst","Bank or provider"), c("type","Type",[["Everyday","Everyday"],["Savings","Savings"],["Offset","Offset"],["Term deposit","Term deposit"],["Credit card","Credit card"],["Business","Business"]]),
       t("bsb","BSB",{bsb:true, ph:"e.g. 062-000", show:x => !L().nz && x.type !== "Credit card"}),
       t("acctno","Account number",{noguard:true, ph:() => L().nz ? "e.g. 12-3456-0123456-00" : "e.g. 1029 3847", show:x => x.type !== "Credit card"}),
       t("last4","Card: last 4 digits only",{digits:true, ph:"e.g. 4412", show:x => x.type === "Credit card"}),
       c("owner","Whose name is it in?",[["Sole","Just mine"],["Joint","Joint"]]),
-      t("jointWith","Joint with",{show:x => x.owner === "Joint"}), a("notes","What comes out of it? Anything linked?",{smart:true, rows:3})],
+      p("jointWith","Joint with",{show:x => x.owner === "Joint", help:"Add everyone whose name is on it."}), a("notes","What comes out of it? Anything linked?",{smart:true, rows:3})],
     tip:() => L().nz
       ? "For bank accounts, add the full account number: your executor will need it, and it’s the same number you’d put on an invoice. For credit cards, the last 4 digits are enough here. Full card details can go in the vault (Admin › The vault)."
       : "For bank accounts, add the BSB and account number: your executor will need them, and they’re the same details you’d put on an invoice. For credit cards, the last 4 digits are enough here. Full card details can go in the vault (Admin › The vault)."},
-  retire:{noun:"fund", title:x => x.fund, sub:x => L().nz ? "Paid to the estate" : [x.nomination, x.nominee && "to " + x.nominee].filter(Boolean).join(" · "),
+  retire:{noun:"fund", title:x => x.fund, sub:x => L().nz ? "Paid to the estate" : [x.nomination, filled(x.nominee) && "to " + whoText(x.nominee)].filter(Boolean).join(" · "),
     presets:() => (L().nz ? ["Fisher Funds","Milford","Simplicity","ANZ KiwiSaver","ASB KiwiSaver","Westpac KiwiSaver","Generate","Booster"] : ["AustralianSuper","ART","Aware Super","UniSuper","Hostplus","REST","HESTA","Cbus","BT Super","AMP"]).map(n => ({label:n, data:{fund:n}})),
     fields:() => L().nz ? [t("fund","Provider"), t("member","Member number (last 4 only)",{digits:true}), c("insurance","Any insurance attached?",ynu), a("notes","Notes",{rows:3})]
       : [t("fund","Fund"), t("member","Member number (last 4 only)",{digits:true}),
         c("nomination","Death benefit nomination",[["Binding (lapsing)","Binding, lapsing"],["Binding (non-lapsing)","Binding, non-lapsing"],["Non-binding","Non-binding"],["Reversionary","Reversionary pension"],["None","None"],["Not sure","Not sure"]],{help:"Only a valid binding nomination (or reversionary pension) tells the fund who must be paid. Otherwise the trustee decides."}),
         d("signed","Date it was signed",{show:x => x.nomination === "Binding (lapsing)", help:"Lapsing nominations usually expire after 3 years."}),
-        t("nominee","Who was nominated?"), c("insurance","Insurance inside this fund?",ynu), a("notes","Notes",{rows:3})]},
-  policies:{noun:"policy", title:x => x.insurer || x.type, sub:x => [x.type, x.heldVia && "via " + x.heldVia, x.beneficiary && "to " + x.beneficiary].filter(Boolean).join(" · "),
+        p("nominee","Who was nominated, and what share does each get?",{split:true, extra:["My estate"], show:x => x.nomination !== "None",
+          help:"Add everyone on the nomination form. “My estate” means your legal personal representative (your executor)."}), c("insurance","Insurance inside this fund?",ynu), a("notes","Notes",{rows:3})]},
+  policies:{noun:"policy", title:x => x.insurer || x.type, sub:x => [x.type, x.heldVia && "via " + x.heldVia, filled(x.beneficiary) && "to " + whoText(x.beneficiary)].filter(Boolean).join(" · "),
     presets:() => ["Life","TPD","Income protection","Trauma","Funeral","Mortgage protection","Accident cover on a credit card","Home & contents","Car","Health"].map(n => ({label:n, data:{type:n}})),
     fields:() => [t("insurer","Insurer"), t("type","Type of cover"), c("heldVia","Held",[["Super",`Inside ${L().retire}`],["Work","Through work"],["Myself","Paid personally"],["Credit card","Comes with a card"]]),
-      t("beneficiary","Nominated beneficiary",{help:"Insurance inside super is paid to the fund first, then follows the fund’s nomination rules."}), t("ref","Policy number (last 4 only)",{digits:true}),
+      p("beneficiary","Nominated beneficiaries and their shares",{split:true, extra:["My estate"], help:() => `Add everyone named on the policy, and the share each one gets. Cover inside ${L().nz ? "KiwiSaver" : "super"} is paid to the fund first, then follows the fund’s rules.`}), t("ref","Policy number (last 4 only)",{digits:true}),
       t("where","Where is the policy document?"), d("renews","Renews on"), a("notes","Notes",{smart:true, rows:3})]},
-  assets:{noun:"asset", title:x => x.what, sub:x => [x.type, x.ownership, x.intendedFor && "for " + x.intendedFor].filter(Boolean).join(" · "),
+  assets:{noun:"asset", title:x => x.what, sub:x => [x.type, x.ownership, filled(x.intendedFor) && "for " + whoText(x.intendedFor)].filter(Boolean).join(" · "),
     presets:() => ["Home","Investment property","Car","Boat / caravan","Shares","Managed fund","Cryptocurrency","Collectibles","Business interest","Land"].map(n => ({label:n, data:{what:n, type:n}})),
     fields:() => [t("what","What is it?"), t("type","Type"), c("ownership","How is it owned?",OWN,{help:"Joint tenants: passes to the other owner automatically, without probate. Tenants in common: your share follows your will."}),
-      t("intendedFor","Who should it go to?"), a("notes","Notes (where the paperwork is, any loan against it)",{smart:true, rows:3})]},
+      p("intendedFor","Who should it go to?",{split:true, help:"If it’s to be shared, give each person’s share. Your will (or how it’s owned) is what decides this legally."}), a("notes","Notes (where the paperwork is, any loan against it)",{smart:true, rows:3})]},
   debts:{noun:"debt", title:x => x.lender || x.type, sub:x => [x.type, x.last4 && "••" + x.last4, x.insured === "yes" ? "insured" : ""].filter(Boolean).join(" · "),
     presets:() => ["Mortgage","Car loan","Personal loan","Credit card","Buy now pay later","Tax owing", L().nz ? "Student loan" : "HELP debt","Guarantee for someone else"].map(n => ({label:n, data:{type:n}})),
     fields:() => [t("lender","Lender"), t("type","Type"), t("last4","Account (last 4 only)",{digits:true}), c("insured","Covered by insurance on death?",ynu), a("notes","Notes",{rows:3})],
@@ -766,22 +836,23 @@ const REG = {
       t("freqOther","How often?",{show:x => x.freq === "Other", ph:"e.g. Every two years, each winter"}),
       {k:"paidFrom", label:"Paid from", type:"acct"}, d("renews","Renews or ends on (if known)"),
       c("outcome","What should happen to it?",[["Cancel","Cancel"],["Keep","Keep"],["Transfer","Transfer to someone"],["Decide","Let them decide"]]),
-      t("transferTo","Transfer to",{show:x => x.outcome === "Transfer"}), a("notes","Notes",{rows:2})]},
+      p("transferTo","Transfer to",{one:true, show:x => x.outcome === "Transfer"}), a("notes","Notes",{rows:2})]},
   docs:{noun:"document", title:x => x.type, sub:x => [x.location, x.date && "dated " + x.date].filter(Boolean).join(" · "),
     presets:() => { const l = L(); return ["Will", l.d.epoa, l.d.health, l.d.acd, l.nz ? "KiwiSaver statements" : "Super nomination", "Life insurance policy","Property title / mortgage papers","Trust deed","Birth certificate","Marriage certificate","Divorce or separation papers","Passport","Tax records","Vehicle papers","Funeral plan or bond", l.nz ? "Contracting out agreement" : "Binding financial agreement"].map(n => ({label:n, data:{type:n}})); },
     fields:() => [t("type","Document"), t("location","Where is the original?",{smart:true, ph:"e.g. Held by Shah Legal, or the blue folder in the study"}), t("digital","Is there a digital copy? Where?"),
-      t("holder","Who holds it (if not you)?"), d("date","Date signed or last updated"), a("notes","Notes",{rows:2})]},
-  devices:{noun:"device", title:x => x.what, sub:x => [x.where, x.outcome].filter(Boolean).join(" · "),
+      p("holder","Who holds it (if not you)?",{one:true, pros:true}), d("date","Date signed or last updated"), a("notes","Notes",{rows:2})]},
+  devices:{noun:"device", title:x => x.what, sub:x => [x.where, x.outcome === "Give" && filled(x.giveTo) ? "give to " + x.giveTo : x.outcome, filled(x.unlock) && "unlock: " + whoText(x.unlock)].filter(Boolean).join(" · "),
     presets:() => ["Phone","Laptop","Tablet","Desktop computer","Smartwatch","Hardware crypto wallet","Smart home hub","External hard drive"].map(n => ({label:n, data:{what:n}})),
-    fields:() => [t("what","Device"), t("where","Where is it kept?"), t("unlock","Who knows how to unlock it?",{help:"Name the person who knows. The passcode itself goes in the vault."}),
+    fields:() => [t("what","Device"), t("where","Where is it kept?"), p("unlock","Who knows how to unlock it?",{help:"Add everyone who knows. The passcode itself goes in the vault."}),
       c("outcome","What should happen to it?",[["Keep","Keep it"],["Give","Give it to someone"],["Wipe","Copy what matters, then wipe and recycle"],["Decide","Let them decide"]]),
-      t("giveTo","Give to",{show:x => x.outcome === "Give"})]},
+      p("giveTo","Give to",{one:true, show:x => x.outcome === "Give"})]},
   digital:{noun:"account", title:x => x.platform, sub:x => [x.outcome, x.legacy === "yes" ? "legacy contact set" : ""].filter(Boolean).join(" · "),
     presets:() => Object.keys(PLATFORM_TIPS).concat(["X / Twitter","TikTok","YouTube channel","Online shop"]).map(n => ({label:n, data:{platform:n}})),
     fields:() => [t("platform","Account"), c("outcome","What should happen to it?",[["Memorialise","Memorialise"],["Delete unread","Delete without reading"],["Download then close","Download, then close"],["Keep","Keep running"],["Decide","Let them decide"]]),
       c("legacy","Legacy contact or emergency access set up?",ynu), a("notes","Notes",{rows:2})], entryTip:x => PLATFORM_TIPS[x.platform] || ""},
-  belongings:{noun:"item", title:x => x.item, sub:x => [x.forWhom && "for " + x.forWhom, x.where].filter(Boolean).join(" · "),
-    fields:() => [t("item","What is it?"), a("story","The story behind it",{rows:4, help:"Where it came from, why it matters. This is often what families treasure most."}), t("forWhom","Who should have it?"), t("where","Where is it?")]}
+  belongings:{noun:"item", title:x => x.item, sub:x => [filled(x.forWhom) && "for " + whoText(x.forWhom), x.where].filter(Boolean).join(" · "),
+    fields:() => [t("item","What is it?"), a("story","The story behind it",{rows:4, help:"Where it came from, why it matters. This is often what families treasure most."}),
+      p("forWhom","Who should have it?",{help:"If it’s to be shared or passed down in turn, add everyone and say how in the notes."}), t("where","Where is it?"), a("notes","Notes",{rows:2})]}
 };
 
 /* ================= the five areas ================= */
@@ -919,7 +990,7 @@ const CHAPTERS = [
    {id:"service", group:"If I die", title:"The farewell", why:"Big or small, religious or not. Whatever helps them say goodbye.",
     fields:[c("kind","What kind of farewell?",[["Traditional funeral","Traditional funeral"],["Celebration of life","Celebration of life"],["Small and private","Small and private"],["No service","No service"],["Their choice","Whatever they need"]]),
      t("venue","Venue or setting"), a("music","Music",{rows:3}), a("readings",() => S.settings.faith === "avoid" ? "Readings or poems" : "Readings, poems or prayers",{rows:3}),
-     t("speakers","Who might speak?"), t("dress","Dress code"), c("flowers","Flowers or donations?",[["Flowers","Flowers"],["Donations","Donations to a charity"],["Either","Either"]]),
+     p("speakers","Who might speak?"), t("dress","Dress code"), c("flowers","Flowers or donations?",[["Flowers","Flowers"],["Donations","Donations to a charity"],["Either","Either"]]),
      t("charity","Which charity?",{show:() => ["Donations","Either"].includes(S.answers["personal.service.flowers"])}), c("live","Livestream for people who can’t attend?",yn), a("wake","After the service",{rows:2})]},
    {id:"funding", group:"If I die", title:"Paying for the funeral", why:"Funerals in Australia and New Zealand commonly cost $5,000 to $15,000. Knowing how it’s paid removes pressure.",
     fields:[c("how","How is the funeral funded?",() => [["prepaid","Prepaid funeral plan"],["bond", L().nz ? "Funeral trust" : "Funeral bond"],["insurance","Funeral or life insurance"],["savings","Savings"],["none","Not arranged yet"]]),
@@ -1386,7 +1457,11 @@ function suggestions(){
     if (lapsing.length) add("lapse","A binding nomination may lapse soon","Lapsing binding nominations usually expire after 3 years. An expired nomination leaves the decision with the trustee.", "Ask your fund: when does my nomination expire, and can I make it non-lapsing?", ["money","retire"]);
   }
   if (f.retire && l.nz) add("kiwisaver","KiwiSaver follows the will","KiwiSaver can’t be nominated to a person. It’s paid to the estate, so the will decides who receives it.", "Ask a lawyer: does my will deal with KiwiSaver the way I want?");
-  if (S.reg.policies.some(p => p.heldVia === "Myself" && !p.beneficiary)) add("benef","Name beneficiaries on your insurance","A policy without a nominated beneficiary is paid to the estate, which can mean waiting for probate.", "Ask your insurer: can I nominate a beneficiary?", ["money","insurance"]);
+  // Shares that don't add up: blanks, or a total other than 100%.
+  [["retire","nominee","retire"],["policies","beneficiary","insurance"],["assets","intendedFor","assets"]].forEach(([rg, k, st]) => {
+    const x = S.reg[rg].find(y => { const pl = plist(y[k]), ns = pl.map(pctOf); return pl.length > 1 && (ns.some(v => v == null) || Math.abs(ns.reduce((s2, v) => s2 + v, 0) - 100) > 0.01); });
+    if (x) add("shares-" + rg, "Check the shares add up to 100%", `The shares for ${REG[rg].title(x) || "one " + REG[rg].noun} don’t add up to 100% yet. Your family will want to know exactly who gets what.`, "", ["money", st]); });
+  if (S.reg.policies.some(p => p.heldVia === "Myself" && !filled(p.beneficiary))) add("benef","Name beneficiaries on your insurance","A policy without a nominated beneficiary is paid to the estate, which can mean waiting for probate.", "Ask your insurer: can I nominate a beneficiary?", ["money","insurance"]);
   if (f.blended) add("blended","Plan carefully for a blended family",`Blended families face more estate disputes. ${l.nz ? "Under the Family Protection Act, some family members can challenge a will they think is unfair." : "Under family provision laws, some family members can challenge a will."} Clear wording, a ${l.agreement} and a letter explaining your reasons all help.`, "Ask a lawyer: how do I reduce the chance of my will being challenged?");
   if (f.business && ans("money.business.buysell") !== "yes") add("business","Plan who takes over the business","A buy-sell agreement sets out what happens to your share, and key-person insurance can fund it.", "Ask your accountant: what happens to my business if I’m suddenly out of action?", ["money","business"]);
   if (f.crypto && !filled(ans("money.crypto.seed"))) add("crypto","Make your crypto reachable","Without a recovery plan, cryptocurrency is lost for good. Record where the recovery phrase is kept, and who knows how to use it.", "", ["money","crypto"]);
@@ -1689,8 +1764,8 @@ function exampleState(){
   s.reg.people = [jo, sam, mia, tom, P("Priya Shah","Lawyer, Shah Legal",["professional"],"(07) 3000 0101"), P("Dr Helen Lee","GP, Paddington Family Practice",["professional"],"(07) 3000 0202"), P("Rachel and Dev Patel","Neighbours",["key_holder","pet_carer"],"0400 000 103")];
   const cc = {id:uid(), inst:"Westpac", type:"Credit card", last4:"2290", owner:"Sole"};
   const cba = {id:uid(), inst:"Commonwealth Bank", type:"Everyday", bsb:"064-000", acctno:"1029 4412", owner:"Sole", notes:"Salary goes in here. Mortgage and power come out."};
-  s.reg.accounts = [cba, {id:uid(), inst:"ING", type:"Savings", bsb:"923-100", acctno:"5550 0937", owner:"Joint", jointWith:"Jo"}, cc];
-  s.reg.retire = [{id:uid(), fund:"AustralianSuper", nomination:"Non-binding", nominee:"Jo", insurance:"yes"}];
+  s.reg.accounts = [cba, {id:uid(), inst:"ING", type:"Savings", bsb:"923-100", acctno:"5550 0937", owner:"Joint", jointWith:[{name:"Jo Morgan", pct:""}]}, cc];
+  s.reg.retire = [{id:uid(), fund:"AustralianSuper", nomination:"Non-binding", nominee:[{name:"Jo Morgan", pct:"60"}, {name:"Mia Morgan", pct:"20"}, {name:"Tom Morgan", pct:"20"}], insurance:"yes"}];
   s.reg.policies = [{id:uid(), insurer:"AustralianSuper (default cover)", type:"Life and TPD", heldVia:"Super"}, {id:uid(), insurer:"Group cover through work", type:"Life", heldVia:"Work"}];
   s.reg.costs = [
     {id:uid(), provider:"Netflix", type:"Netflix", billers:["Netflix"], category:"Phone & TV", amount:"25.99", freq:"Monthly", paidFrom:cc.id, outcome:"Cancel"},
@@ -1704,7 +1779,7 @@ function exampleState(){
   s.billSetup = {done:true, types:{"Home":["Electricity","Water","Council rates","Internet"], "Phone & TV":["Mobile plan","Netflix","Spotify"], "Health & fitness":["Gym","Private health insurance"], "Memberships":["Roadside assistance"], "Vehicles":["Car registration","Car insurance"]}};
   s.reg.docs = [{id:uid(), type:"Will", location:"Original held by Priya Shah, Shah Legal", date:"2014-05-02"}, {id:uid(), type:"Property title / mortgage papers", location:"Grey filing cabinet in the study, top drawer"}];
   s.reg.digital = [{id:uid(), platform:"Apple ID", outcome:"Download then close", legacy:"no"}, {id:uid(), platform:"Main email", outcome:"Keep", legacy:"no"}];
-  s.reg.belongings = [{id:uid(), item:"Grandad’s watch", story:"Bought in Lae in 1962 with his first pay packet. He wore it every day until he gave it to me at my 21st.", forWhom:"Tom", where:"Bedside drawer"}];
+  s.reg.belongings = [{id:uid(), item:"Grandad’s watch", story:"Bought in Lae in 1962 with his first pay packet. He wore it every day until he gave it to me at my 21st.", forWhom:[{name:"Tom Morgan", pct:""}], where:"Bedside drawer"}];
   s.reg.letters = [{id:uid(), personId:mia.id, rel:"child", body:"Dear Mia,\n\nI keep thinking about the afternoon you finally rode without the trainer wheels, wobbling down Latrobe Terrace and yelling at me not to let go. I’d let go three houses earlier.\n\n", deliver:"release"},
                    {id:uid(), personId:tom.id, rel:"young", body:"", deliver:"occasion", occasion:"His 18th birthday"}];
   Object.assign(s.answers, {
@@ -1792,6 +1867,7 @@ function chipsHTML(b, opts, cur, multi, cls){
 }
 let fidN = 0;
 function inputHTML(b, f, val){
+  if (f.type === "people") return peopleHTML(b, f, val);
   const id = "f" + (++fidN);
   const lab = fnv(f.label), help = f.help ? `<p class="help">${esc(fnv(f.help))}</p>` : "";
   const priv = f.private ? ` <span class="tag">Private: never shared</span>` : "";
@@ -2181,7 +2257,7 @@ function billCardHTML(it){
     ${filing ? billFileHTML(it) : `<div class="row" style="gap:8px"><span class="small muted">Filed under</span><span class="tag calm">${esc(catOfType(t2))} › ${esc(t2)}</span><button class="btn sm ghost" data-act="bfile" data-id="${it.id}">Change</button></div>`}
     ${txSectionHTML(it)}
     <div class="decide">${inputHTML(b("outcome"), c("outcome","When I’m gone, what should happen to it?",OUTCOMES), it.outcome)}
-      ${it.outcome === "Transfer" ? inputHTML(b("transferTo"), t("transferTo","Who to?",{ph:"e.g. Jo"}), it.transferTo) : ""}
+      ${it.outcome === "Transfer" ? inputHTML(b("transferTo"), p("transferTo","Who to?",{one:true}), it.transferTo) : ""}
       ${inputHTML(b("paidFrom"), {k:"paidFrom", label:"Paid from", type:"acct"}, it.paidFrom)}</div>
     <div class="row between"><button class="btn sm ghost" data-act="bmore" data-id="${it.id}" aria-expanded="${more}">${more ? "▾ Fewer details" : "▸ More details: amount, how often, renewal, notes"}</button><button class="btn sm ghost" data-act="notbill" data-id="${it.id}">It’s not a bill</button></div>
     ${more ? `<div class="grid2">${inputHTML(b("provider"), t("provider","Name of the company"), it.provider)}${inputHTML(b("amount"), t("amount","Amount ($)",{live:"total"}), it.amount)}
@@ -2575,12 +2651,12 @@ const CAP = [
       else S.reg.costs.push({id:uid(), provider:v.provider.trim(), billers:[v.provider.trim()], amount:v.amount, freq:v.freq}); }}))},
  {id:"accounts", step:["money","accounts"], title:"Bank accounts", q:"Which banks do you use? Just the bank, the kind of account, and whether it’s joint. No full numbers needed.", photo:"Take a photo of a card or statement. Only the bank, type and last 4 digits are kept",
   ph:"e.g. Everyday account with CommBank, joint savings with Jo at ING, a Westpac credit card ending 2290.", done:() => S.reg.accounts.length > 0,
-  schema:`{"accounts":[{"inst":"bank or provider","type":"Everyday | Savings | Offset | Term deposit | Credit card | Business","last4":"last 4 digits only, if given","owner":"Sole | Joint","jointWith":""}]}`,
+  schema:`{"accounts":[{"inst":"bank or provider","type":"Everyday | Savings | Offset | Term deposit | Credit card | Business","last4":"last 4 digits only, if given","owner":"Sole | Joint","jointWith":"the other account holders' names, comma-separated"}]}`,
   facts:j => (Array.isArray(j.accounts) ? j.accounts : []).filter(x => x && filled(x.inst)).map(x => ({label:"Account", where:"Bank accounts", fields:[["inst","Bank"],["type","Type",[["Everyday","Everyday"],["Savings","Savings"],["Offset","Offset"],["Term deposit","Term deposit"],["Credit card","Credit card"],["Business","Business"]]],["last4","Last 4 digits"],["owner","Whose name",[["Sole","Just mine"],["Joint","Joint"]]],["jointWith","Joint with"]],
-    v:{inst:x.inst, type:["Everyday","Savings","Offset","Term deposit","Credit card","Business"].find(t2 => lc(t2) === lc(x.type)) || "Everyday", last4:String(x.last4 || "").replace(/\D/g, "").slice(-4), owner:lc(x.owner) === "joint" ? "Joint" : "Sole", jointWith:x.jointWith || ""},
+    v:{inst:x.inst, type:["Everyday","Savings","Offset","Term deposit","Credit card","Business"].find(t2 => lc(t2) === lc(x.type)) || "Everyday", last4:String(x.last4 || "").replace(/\D/g, "").slice(-4), owner:lc(x.owner) === "joint" ? "Joint" : "Sole", jointWith:Array.isArray(x.jointWith) ? x.jointWith.join(", ") : String(x.jointWith || "")},
     apply:v => { if (!filled(v.inst)) return; const ex = S.reg.accounts.find(a2 => lc(a2.inst) === lc(v.inst) && a2.type === v.type); const tail = String(v.last4 || "").replace(/\D/g, "").slice(-4);
       if (ex) { if (tail && !acctTail(ex)) { if (v.type === "Credit card") ex.last4 = tail; else ex.acctno = tail; } return; }
-      S.reg.accounts.push({id:uid(), inst:v.inst.trim(), type:v.type, owner:v.owner, jointWith:v.owner === "Joint" ? v.jointWith : "", last4:v.type === "Credit card" ? tail : "", acctno:v.type === "Credit card" ? "" : tail}); }}))},
+      S.reg.accounts.push({id:uid(), inst:v.inst.trim(), type:v.type, owner:v.owner, jointWith:v.owner === "Joint" ? plist(v.jointWith) : [], last4:v.type === "Credit card" ? tail : "", acctno:v.type === "Credit card" ? "" : tail}); }}))},
  {id:"will", step:["admin","docs"], title:"Your will", q:"Do you have a will? Where’s the signed original kept, and who’s your executor?", photo:"Take a photo of the will’s cover page",
   ph:"e.g. Yes, from 2014. The original is with Priya Shah at Shah Legal. Jo is executor, and Sam is backup.", done:() => S.reg.docs.some(x => /will/i.test(x.type || "")) || holders("executor").length > 0,
   schema:`{"hasWill":"yes | no | unsure","location":"where the signed original is","holder":"lawyer or firm holding it, if any","date":"YYYY-MM-DD, or just the year","executors":[${PERSON_SCHEMA}],"backup":[${PERSON_SCHEMA}]}`,
@@ -2958,10 +3034,12 @@ function familyTasks(sit){
     add("will", "week", "Find the original will", will ? (will.location || "") + (will.holder ? (will.location ? " · " : "") + "Held by " + will.holder : "") : "No location recorded.", nmOf(exec));
     if (ans("personal.service.kind") || ans("personal.service.music")) add("farewell", "week", "Plan the farewell", [ans("personal.service.kind") && "Kind: " + ans("personal.service.kind"), ans("personal.service.venue") && "Where: " + ans("personal.service.venue"), ans("personal.service.music") && "Music: " + ans("personal.service.music")].filter(Boolean).join("\n"), nmOf(holders("funeral_lead")));
     add("certs", "week", "Order death certificates", `From ${L().bdm}. The funeral director can usually help.`, nmOf(exec));
-    S.reg.accounts.forEach(x => add("acct-" + x.id, "later", `Tell ${x.inst || "the bank"}`, `${x.type || "Account"}${acctTail(x) ? " ••" + acctTail(x) : ""}. ${x.owner === "Joint" ? "Joint" + (x.jointWith ? " with " + x.jointWith : "") + ", so it usually passes to them." : "In one name, so it will be frozen until probate or a small-estate release."}`, nmOf(exec)));
-    S.reg.policies.forEach(x => add("pol-" + x.id, "later", `Claim on the ${x.type || "insurance"} policy`, [x.insurer, x.where && "Document: " + x.where].filter(Boolean).join(" · "), nmOf(exec)));
+    S.reg.accounts.forEach(x => add("acct-" + x.id, "later", `Tell ${x.inst || "the bank"}`, `${x.type || "Account"}${acctTail(x) ? " ••" + acctTail(x) : ""}. ${x.owner === "Joint" ? "Joint" + (filled(x.jointWith) ? " with " + whoText(x.jointWith) : "") + ", so it usually passes to them." : "In one name, so it will be frozen until probate or a small-estate release."}`, nmOf(exec)));
+    S.reg.retire.forEach(x => add("ret-" + x.id, "later", `Claim from ${x.fund || L().fund}`, [!L().nz && x.nomination && "Nomination: " + x.nomination, !L().nz && filled(x.nominee) && "To " + whoText(x.nominee), x.insurance === "yes" && "Ask about the insurance inside it"].filter(Boolean).join(" · "), nmOf(exec)));
+    S.reg.policies.forEach(x => add("pol-" + x.id, "later", `Claim on the ${x.type || "insurance"} policy`, [x.insurer, filled(x.beneficiary) && "To " + whoText(x.beneficiary), x.where && "Document: " + x.where].filter(Boolean).join(" · "), nmOf(exec)));
+    S.reg.assets.filter(x => filled(x.intendedFor)).forEach(x => add("ast-" + x.id, "later", `${x.what || "The asset"}: to ${whoText(x.intendedFor)}`, [x.ownership, x.notes].filter(Boolean).join(" · "), nmOf(exec)));
     if (S.reg.costs.length) { const n = k => S.reg.costs.filter(x => x.outcome === k).length; add("bills", "later", "Sort out the bills", `${n("Cancel")} to cancel, ${n("Transfer")} to hand on, ${n("Keep")} to keep for now. The list is in the executor’s list.`, nmOf(exec)); }
-    S.reg.belongings.forEach(x => add("bel-" + x.id, "later", `Give ${x.item || "the item"} to ${x.forWhom || "the chosen person"}`, x.story || "", nmOf(exec)));
+    S.reg.belongings.forEach(x => add("bel-" + x.id, "later", `Give ${x.item || "the item"} to ${whoText(x.forWhom) || "the chosen person"}`, [x.story, x.notes].filter(Boolean).join("\n"), nmOf(exec)));
   }
   return T2;
 }
@@ -3373,9 +3451,10 @@ function executorDoc(){
     `Keep the mobile${ans("admin.keep.mobile") ? " (" + esc(ans("admin.keep.mobile")) + ")" : ""} and email${ans("admin.keep.email") ? " (" + esc(ans("admin.keep.email")) + ")" : ""} active.`];
   const weeks = ["Find the original will: " + (will ? esc(will.location || "location not recorded") : "<em>no location recorded</em>") + ".",
     `Order several death certificates from ${esc(l.bdm)}.`, `Use ${esc(l.notify)}.`,
-    ...S.reg.accounts.map(x => `Tell ${esc(x.inst || "the bank")} about the ${esc((x.type || "account").toLowerCase())}${acctFull(x) ? " (" + esc(acctFull(x)) + ")" : ""}. ${x.owner === "Joint" ? "It’s joint" + (x.jointWith ? " with " + esc(x.jointWith) : "") + ", so it usually passes to them." : "It’s in one name, so it will be frozen until probate or a small-estate release."}`),
-    ...S.reg.retire.map(x => `Claim from ${esc(x.fund || l.fund)}.${!l.nz && x.nomination ? " Nomination: " + esc(x.nomination) + (x.nominee ? " to " + esc(x.nominee) : "") + "." : ""}${x.insurance === "yes" ? " Ask about the insurance inside it." : ""}`),
-    ...S.reg.policies.map(x => `Claim on the ${esc(x.type || "insurance")} policy${x.insurer ? " with " + esc(x.insurer) : ""}.${x.where ? " Policy document: " + esc(x.where) + "." : ""}`),
+    ...S.reg.accounts.map(x => `Tell ${esc(x.inst || "the bank")} about the ${esc((x.type || "account").toLowerCase())}${acctFull(x) ? " (" + esc(acctFull(x)) + ")" : ""}. ${x.owner === "Joint" ? "It’s joint" + (filled(x.jointWith) ? " with " + esc(whoText(x.jointWith)) : "") + ", so it usually passes to them." : "It’s in one name, so it will be frozen until probate or a small-estate release."}`),
+    ...S.reg.retire.map(x => `Claim from ${esc(x.fund || l.fund)}.${!l.nz && (x.nomination || filled(x.nominee)) ? " Nomination: " + esc(x.nomination || "type not recorded") + (filled(x.nominee) ? ", to " + esc(whoText(x.nominee)) : "") + "." : ""}${x.insurance === "yes" ? " Ask about the insurance inside it." : ""}`),
+    ...S.reg.policies.map(x => `Claim on the ${esc(x.type || "insurance")} policy${x.insurer ? " with " + esc(x.insurer) : ""}.${filled(x.beneficiary) ? " Beneficiaries: " + esc(whoText(x.beneficiary)) + "." : ""}${x.where ? " Policy document: " + esc(x.where) + "." : ""}`),
+    ...S.reg.assets.filter(x => filled(x.intendedFor)).map(x => `${esc(x.what || "Asset")}${x.ownership ? " (" + esc(x.ownership) + ")" : ""}: meant for ${esc(whoText(x.intendedFor))}.`),
     f.employee ? `Contact the employer${ans("money.employer.name") ? " (" + esc(ans("money.employer.name")) + ")" : ""} about final pay, leave and group insurance.` : "",
     ...(ans("admin.gov.list") || []).map(g => "Tell " + esc(optLabel("admin","gov","list",g)) + "."),
     f.owns ? "Tell the home insurer. Cover can be limited if the house is empty for 60 to 90 days." : "",
@@ -3386,7 +3465,7 @@ function executorDoc(){
     ...S.reg.digital.map(x => `${esc(x.platform || "Online account")}: ${esc((x.outcome || "decide what to do").toLowerCase())}.`),
     (ans("personal.keepdelete.delete") || []).length ? "Delete without reading: " + esc((ans("personal.keepdelete.delete") || []).map(v => optLabel("personal","keepdelete","delete",v)).join(", ")) + (holders("digital").length ? " (" + holders("digital").map(p => esc(p.name)).join(", ") + " is looking after this)" : "") + "." : "",
     ...S.reg.devices.map(x => `${esc(x.what || "Device")}: ${esc(({Keep:"keep it", Give:"give it to " + (x.giveTo || "the chosen person"), Wipe:"copy what matters, then wipe and recycle", Decide:"decide what to do"})[x.outcome] || "decide what to do")}.`),
-    ...S.reg.belongings.map(x => `Give ${esc(x.item || "the item")} to ${esc(x.forWhom || "the chosen person")}${x.story ? ", and tell them the story: " + esc(x.story) : "."}`),
+    ...S.reg.belongings.map(x => `Give ${esc(x.item || "the item")} to ${esc(whoText(x.forWhom) || "the chosen person")}${x.story ? ", and tell them the story: " + esc(x.story) : "."}${x.notes ? " " + esc(x.notes) : ""}`),
     ans("money.points.list") ? "Ask about transferring points and vouchers: " + esc(ans("money.points.list")) : "",
     ans("money.owed.who") ? "Money owed to the estate: " + esc(ans("money.owed.who")) + (ans("money.owed.intent") === "forgive" ? " (their wish: forgive these loans)" : ans("money.owed.intent") === "repay" ? " (their wish: these should be repaid)" : "") : ""];
   return `<h1>Executor’s list</h1><p class="lead">A step-by-step list for whoever is looking after ${nm}’s affairs. Work through it at your own pace, and tick things off with whoever is helping.</p>
@@ -3399,6 +3478,7 @@ function valText(ch, st, fd){
   const v = S.answers[`${ch.id}.${st.id}.${fd.k}`]; if (!filled(v)) return "";
   const opts = fd.opts ? fnv(fd.opts) : null, lab = x => ((opts || []).find(o => o[0] === x) || [x, x])[1];
   if (fd.type === "multi") return v.map(lab).join(", ");
+  if (fd.type === "people") return fd.one ? String(v) : whoText(v);
   if (fd.type === "choice") return lab(v);
   return v;
 }
@@ -3550,6 +3630,17 @@ const ACT = {
   unrole(el){ const p = S.reg.people.find(x => x.id === el.dataset.pid); if (p) p.roles = (p.roles || []).filter(q => q !== el.dataset.role); save(); rerender(); },
   newrole(el){ const inp = document.getElementById(el.dataset.inp); const name = inp && inp.value.trim(); if (!name) { if (inp) inp.focus(); return; }
     S.reg.people.push({id:uid(), name, rel:"", roles:[el.dataset.role]}); touched(); save(); rerender(); toast(name + " added to your people"); },
+  // People fields: add from your people, add someone new, remove, choose one, split equally.
+  padd(el){ const b = el.dataset.b, l = plist(getB(b)); if (!l.some(x => samePerson(x.name, el.dataset.v))) l.push({name:el.dataset.v, pct:""}); setB(b, l); touched(); save(); rerender(); },
+  pnew(el){ const inp = document.getElementById(el.dataset.inp), name = inp && inp.value.trim(); if (!name) { if (inp) inp.focus(); return; }
+    const b = el.dataset.b;
+    if (el.dataset.one) setB(b, name);
+    else { const l = plist(getB(b)); if (!l.some(x => samePerson(x.name, name))) l.push({name, pct:""}); setB(b, l); }
+    touched(); save(); rerender(); },
+  prm(el){ const b = el.dataset.b, l = plist(getB(b)); l.splice(+el.dataset.i, 1); setB(b, l); touched(); save(); rerender(); },
+  pone(el){ const b = el.dataset.b, v = el.dataset.v; setB(b, samePerson(getB(b), v) ? "" : v); touched(); save(); rerender(); },
+  peq(el){ const b = el.dataset.b, l = plist(getB(b)), n = l.length; if (!n) return;
+    const each = Math.floor(10000 / n) / 100; l.forEach((x, i) => { x.pct = pctTxt(i === n - 1 ? 100 - each * (n - 1) : each); }); setB(b, l); touched(); save(); rerender(); },
   fu(el){ const k = el.dataset.k, x = el.dataset.x, y = el.dataset.y;
     if (k === "add") { let p = {}; try { p = JSON.parse(y); } catch(e) {} const it = Object.assign({id:uid()}, p); if (x === "people" && !it.roles) it.roles = []; S.reg[x].push(it); save(); toast("Added. You can fill in the details later."); rerender(); }
     if (k === "goto") { const ch = chapterById(x); const i = ch ? stepsOf(ch).findIndex(s => s.id === y) : -1; if (i < 0) { toast("That isn’t in this plan yet. Redo the Life Scan to add it."); return; } go("chapter", {chapter:x, step:i}); }
@@ -3782,6 +3873,10 @@ document.addEventListener("input", e => {
   const el = e.target;
   if (el.dataset && el.dataset.vb) { const [id, k] = el.dataset.vb.split("|"), it = V.items.find(x => x.id === id); if (it && V.key) { it[k] = el.value; vaultSealSoon(); } return; }
   if (el.dataset && el.dataset.capf && ui.cap && ui.cap.facts) { const [i, k] = el.dataset.capf.split("|"), f = ui.cap.facts[+i]; if (f) f.v[k] = el.value; return; }
+  if (el.dataset && el.dataset.pct) { const pb = el.dataset.pct, l = plist(getB(pb)), x = l[+el.dataset.i]; if (!x) return;
+    const nv = el.value.replace(/[^0-9.]/g, "").replace(/^(\d*\.\d*)\..*$/, "$1"); if (nv !== el.value) el.value = nv;
+    x.pct = nv; setB(pb, l); const box = document.getElementById("pt_" + bid(pb)); if (box) box.innerHTML = ptotalHTML(l, pb);
+    touched(); save(); return; }
   const b = el.dataset && el.dataset.b; if (!b) return;
   let v = el.value;
   if (el.dataset.digits) { const nv = v.replace(/\D/g, "").slice(0, 4); if (nv !== v) { el.value = nv; v = nv; } }
@@ -3832,6 +3927,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey && (e.target.id === "home_text" || e.target.id === "cap_text") && !window.matchMedia("(pointer:coarse)").matches) { e.preventDefault(); e.target.id === "home_text" ? ACT.homesend() : capSend(); return; }
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "ask_text") { e.preventDefault(); askPlan(); return; }
   if (e.key === "Escape" && ui.pop) { ui.pop = null; rerender(); return; }
+  if (e.key === "Enter" && e.target.matches && e.target.matches(".pf-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=pnew]"); if (btn) ACT.pnew(btn); return; }
   if (e.key === "Enter" && e.target.matches && e.target.matches(".role-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=newrole]"); if (btn) ACT.newrole(btn); }
 });
 
