@@ -62,7 +62,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 .places button:hover{color:var(--ink);background:var(--bg)}
 .places button.on{color:var(--ink);background:var(--dusk)}
 .tabbar{display:none}
-.topbtn{background:none;border:1px solid transparent;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:.92rem;color:var(--muted);font-weight:600;min-width:40px;min-height:36px}
+.topbtn{background:none;border:1px solid transparent;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:.92rem;color:var(--muted);font-weight:600;min-width:40px;min-height:36px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){ .top .savestate{display:none} .topbtn{max-width:120px;padding:6px 8px} .top{gap:8px} }
 .topbtn:hover,.topbtn[aria-expanded="true"]{color:var(--ink);border-color:var(--line);background:var(--raised)}
 .pop{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(100% + 6px);background:var(--raised);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px;display:grid;gap:12px;z-index:12;width:min(320px,calc(100vw - 24px))}
 .pop .label{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
