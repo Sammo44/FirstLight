@@ -35,7 +35,7 @@ Open `index.html` in a browser, or visit **https://sammo44.github.io/FirstLight/
 - **Works without Claude:** prompts are worded for what the page can do, *Tell me anything* suggests where a note goes, and bills become a tick-list of common ones.
 - **Backups:** download the whole plan as one file and restore it later, from Settings or the Menu. Plans kept only in the browser get a reminder.
 - **Say it or snap it:** ten conversational questions for the essentials. Claude pulls out the facts and shows a *Here's what I heard* card. Nothing is saved until the person confirms.
-- **Bills in a minute:** upload bank and card statements (CSV, read on the device), then decide each biller one card at a time: cancel, keep or hand on. The full four-step flow sits under *Fine-tune*.
+- **Bills in a minute:** upload bank and card statements (CSV, read on the device), then decide each biller one card at a time: cancel, keep or hand on. Every card can be edited (name, what it's for, amount, how often, renewal, account, filing and notes), and a bill can be handed to anyone in the plan or someone new. A renamed bill keeps its statement name, so the next upload still matches it. The full four-step flow sits under *Fine-tune*.
 - **Family view:** what to do today, this week and later, jobs assigned to people from their roles, and *Ask the plan*.
 - **Walk me round the house:** a photo and a sentence at each stop (photos stay on the device).
 - **Sunday afternoon mode:** for doing it together with a parent, with big type, read-aloud, a mix of practical questions and stories, and an easy break.
@@ -60,7 +60,7 @@ The tests run in headless Microsoft Edge on Windows:
 ```
 
 - **System crawl (`sit.js`):** visits every screen, presses every safe button, types into every field and changes every dropdown, on the example plan, a fresh plan and a parent plan. It also runs with a stand-in for Claude. It reports any error or blank screen. Each crawl runs in two parts, because the test browser stops after a few thousand clicks in one page.
-- **Feature suites:** CSV parsing and outputs (`harness2.js`), conversational capture (`talk.js`), Letters and words (`words.js`, `letters.js`), family view and Ask (`fam.js`), house walk and Sunday mode (`walk.js`), beneficiaries and shares (`people.js`), older plans that stored names as text (`legacy.js`), the quick start, offline paths, backups and layout (`ux.js`), and bills one card at a time (`bq.js`).
+- **Feature suites:** CSV parsing and outputs (`harness2.js`), conversational capture (`talk.js`), Letters and words (`words.js`, `letters.js`), family view and Ask (`fam.js`), house walk and Sunday mode (`walk.js`), beneficiaries and shares (`people.js`), older plans that stored names as text (`legacy.js`), the quick start, offline paths, backups and layout (`ux.js`), bills one card at a time (`bq.js`), and editing bills found on statements (`billedit.js`, with made-up statements).
 - Run some suites only with `./tests/run-tests.ps1 -Only people,legacy`.
 - **`bq.js` needs real-looking statements.** Put them in `tests/fixtures/statements.js` as `window.__files = [{name, text}, …]`. That folder is git-ignored, so personal statements never end up in the repo.
 - `mockclaude.js` and `mockclaude2.js` stand in for Claude, so the AI paths can be tested offline.

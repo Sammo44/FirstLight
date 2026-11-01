@@ -187,6 +187,10 @@ button,input,textarea,select{font:inherit;color:inherit}
 .bqtx div{display:flex;justify-content:space-between;gap:12px;font-size:.92rem;color:var(--muted)}
 .bqtx .num{font-variant-numeric:tabular-nums;color:var(--ink)}
 .bqfile{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.bqhead{display:grid;gap:8px}
+.bqedit{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:12px}
+.btn.bqa.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bqwho{display:grid;gap:10px}
 .bqacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .bqa{min-height:56px;font-size:1rem;border-radius:14px;padding:10px 12px;text-align:center}
 @media (max-width:520px){ .bqacts{grid-template-columns:minmax(0,1fr)} }
@@ -605,7 +609,7 @@ let S = blank();
 const ui = {view:"welcome", chapter:null, step:0, open:null, confirmDel:null, navOpen:false, scanPage:0, wtab:"letters", otab:"hospital", lguide:{}, wq:{}, wmode:{}, follow:{},
   sugOpen:null, fuHide:new Set(), confirmReset:false, ess:null, checkDone:false,
   find:{state:"idle", items:[], msg:"", src:""}, photo:null, pasteText:"", ai:{ok:false, images:false}, openDet:{}, billStep:null, txOpen:new Set(), moreTypes:new Set(),
-  bFile:new Set(), bMore:new Set(), bCat:{}, allOpts:new Set(), entryMore:new Set(), scanMore:false, restore:null};
+  bFile:new Set(), bMore:new Set(), bqEdit:new Set(), bCat:{}, allOpts:new Set(), entryMore:new Set(), scanMore:false, restore:null};
 
 /* ================= country ================= */
 const AU_STATES = [["NSW","NSW"],["VIC","VIC"],["QLD","QLD"],["WA","WA"],["SA","SA"],["TAS","TAS"],["ACT","ACT"],["NT","NT"]];
@@ -847,6 +851,8 @@ function typeOf(x){
 }
 const catOfType = t2 => { const r2 = TYPE_CAT()[String(t2 || "").toLowerCase()]; return r2 ? r2[0] : "Other"; };
 const billName = x => x.provider || typeOf(x) || "New bill";
+// A bill keeps every name it has had on a statement, so renaming "NETFLIX.COM SYDNEY" to "Netflix" still matches the next upload.
+const isBilledAs = (x, ns) => ns.some(n => filled(n) && (lc(x.provider) === lc(n) || (x.billers || []).some(b2 => lc(b2) === lc(n))));
 const FREQ = [["Weekly","Weekly"],["Fortnightly","Fortnightly"],["Monthly","Monthly"],["Quarterly","Quarterly"],["Yearly","Yearly"],["Ad hoc","As needed (ad hoc)"],["Other","Other"]];
 const FREQ_MULT = {Weekly:52/12, Fortnightly:26/12, Monthly:1, Quarterly:1/3, Yearly:1/12, "Ad hoc":0, Other:0};
 const perMonth = x => { const v = parseFloat(String(x.amount || "").replace(/[^0-9.]/g,"")) || 0, f = x.freq || "Monthly";
@@ -1877,6 +1883,7 @@ function ref(b){
   if (kind === "rel") return [S.release, rest[0]];
   if (kind === "ck") return [S.check, rest[0]];
   if (kind === "u") return [ui, rest[0]];
+  if (kind === "fi") { const x = (ui.find.items || [])[+rest[0]]; return [x || {}, rest[1]]; }   // a biller found on a statement, before it's saved
   if (kind === "r") { const it = S.reg[rest[0]].find(x => x.id === rest[1]); return [it || {}, rest[2]]; }
   return [{}, "x"];
 }
@@ -1939,7 +1946,7 @@ function inputHTML(b, f, val){
   const priv = f.private ? ` <span class="tag">Private: never shared</span>` : "";
   const gs = (f.type === "text" || f.type === "area") && !f.noguard && !f.bsb && !f.digits;
   const assist = gs ? `<div class="assist" id="as_${id}">${assistHTML(val, id, f.smart)}</div>` : "";
-  const data = `data-b="${esc(b)}"${gs ? ` data-assist="${f.smart ? "s" : "g"}"` : ""}${f.digits ? ` data-digits="1" inputmode="numeric" maxlength="4"` : ""}${f.bsb ? ` data-bsb="1" inputmode="numeric" maxlength="7"` : ""}${f.live ? ` data-live="${f.live}"` : ""}`;
+  const data = `data-b="${esc(b)}"${gs ? ` data-assist="${f.smart ? "s" : "g"}"` : ""}${f.digits ? ` data-digits="1" inputmode="numeric" maxlength="4"` : ""}${f.bsb ? ` data-bsb="1" inputmode="numeric" maxlength="7"` : ""}${f.live ? ` data-live="${f.live}"` : ""}${f.num ? ` inputmode="decimal"` : ""}`;
   const ph = esc(fnv(f.ph) || "");
   switch (f.type) {
     case "text": return `<div class="field"><label for="${id}">${esc(lab)}${priv}</label>${help}<input id="${id}" type="text" ${data} value="${esc(val || "")}" placeholder="${ph}" autocomplete="off">${assist}</div>`;
@@ -2032,15 +2039,15 @@ const billStep = () => ui.billStep || (S.billSetup && S.billSetup.done ? "list" 
 // Save everything found on the statements (except what looks like a one-off, a stopped charge or "not a bill").
 function saveFound(){
   let added = 0, merged = 0;
-  ui.find.items.forEach(x => { if (x.skip) return;
+  ui.find.items.forEach(x => { if (x.skip) return; if (!filled(x.provider) && x.orig) x.provider = x.orig;
     if (x.kind === "debt") { const ex = S.reg.debts.find(d2 => lc(d2.lender) === lc(x.provider));
       if (ex) { ex.seen = mergeTx(ex.seen, x.txs); ex.notes = x.note || ex.notes; merged++; } else { S.reg.debts.push({id:uid(), lender:x.provider, type:"Buy now pay later", notes:x.note || "", seen:x.txs || []}); added++; } return; }
-    const a = x.alloc || {}, type = a.type || "";
+    const a = x.alloc || {}, type = a.type || "", bl = [x.provider, x.orig].filter((n, i, l) => filled(n) && l.findIndex(o => lc(o) === lc(n)) === i);
     if (type) selectType(type, true);
-    const ex = S.reg.costs.find(c2 => lc(c2.provider) === lc(x.provider) && (!type || typeOf(c2) === type))
+    const ex = S.reg.costs.find(c2 => isBilledAs(c2, bl) && (!type || typeOf(c2) === type))
       || (type ? S.reg.costs.find(c2 => typeOf(c2) === type && (!c2.provider || lc(c2.provider) === lc(type))) : null);
-    if (ex) { mergeInto(ex, Object.assign({}, x, {type})); if (type && typeOf(ex) !== type) setBillType(ex, type); merged++; }
-    else { S.reg.costs.push({id:uid(), provider:x.provider, type, billers:[x.provider], category:type ? catOfType(type) : (a.cat || "Other"), amount:x.amount != null ? String(x.amount) : "", freq:x.freq || "Other", freqOther:x.freq ? "" : "Not sure yet", renews:x.renews || "", notes:x.note || "", seen:mergeTx([], x.txs)}); added++; } });
+    if (ex) { mergeInto(ex, Object.assign({}, x, {type, billers:bl})); if (type && typeOf(ex) !== type) setBillType(ex, type); merged++; }
+    else { S.reg.costs.push({id:uid(), provider:x.provider, type, billers:bl, category:type ? catOfType(type) : (a.cat || "Other"), amount:filled(x.amount) ? String(x.amount) : "", freq:x.freq || "Other", freqOther:x.freq ? (x.freq === "Other" ? x.freqOther || "" : "") : "Not sure yet", renews:x.renews || "", notes:x.note || "", seen:mergeTx([], x.txs)}); added++; } });
   const folded = tidyBills(); added -= Math.min(added, folded); merged += folded;
   S.billSetup = S.billSetup || {done:true, types:JSON.parse(JSON.stringify(selectedTypes()))}; S.billSetup.done = true;
   return {added, merged};
@@ -2058,6 +2065,15 @@ function startSwipe(extra){
   ui.billMode = "quick"; render(); const c2 = document.getElementById("stepcard"); if (c2) window.scrollTo(0, Math.max(0, c2.getBoundingClientRect().top + window.scrollY - 90));
 }
 const OUT_WORD = {Cancel:"Cancel it", Keep:"Keep paying", Transfer:"Hand on", Decide:"Let them decide"};
+// Record what should happen to the bill on screen, then move to the next one (or back to the list, for a single bill).
+function swipeDecide(v, to){
+  const sw = ui.swipe, it = sw && S.reg.costs.find(x => x.id === sw.queue[sw.i]); if (!it || !OUT_WORD[v]) return;
+  it.outcome = v; if (v === "Transfer") it.transferTo = to || it.transferTo || "";
+  sw.done.push({id:it.id, o:v}); ui.bFile.delete(it.id); ui.bqEdit.delete(it.id);
+  if (sw.single) ui.swipe = null; else sw.i++;
+  touched(); save(); rerender();
+  toast(`${billName(it)}: ${v === "Transfer" && it.transferTo ? "hand it to " + it.transferTo : OUT_WORD[v].toLowerCase()}`);
+}
 // The quick view: one sentence about what keeps charging, then decide them one card at a time.
 function billsQuickHTML(){
   const sw = ui.swipe, fd = ui.find;
@@ -2088,29 +2104,62 @@ function billsSummaryHTML(){
   return `<div class="bqgroups">${groups.map(([k, lab]) => { const xs = S.reg.costs.filter(x => (x.outcome || "") === k); return xs.length ? `<details class="fsec-d"${det("bq:" + k, k === "")}><summary class="fsec">${esc(lab)} (${xs.length})</summary><div class="bqlist">${xs.map(row).join("")}</div></details>` : ""; }).join("")}</div>
     <div class="row"><button class="btn sm ghost" data-act="bmode" data-v="fine">Fine-tune: categories, transactions and details ›</button></div>`;
 }
+// The bill's name, sub-category and amount at the top of its card. Redrawn as the person edits.
+function bqHeadHTML(it){
+  const t2 = typeOf(it), others2 = (it.billers || []).filter(n => lc(n) !== lc(billName(it)));
+  return `<div class="row between" style="align-items:baseline"><h3 class="bqname">${esc(billName(it))}</h3>${t2 ? `<span class="tag calm">${esc(t2)}</span>` : ""}</div>
+    ${filled(it.desc) ? `<span class="muted">${esc(it.desc)}</span>` : ""}
+    ${others2.length ? `<span class="small muted">On your statements as ${esc(others2.join(", "))}</span>` : ""}
+    <div class="bqamt">${filled(it.amount) ? `$${esc(it.amount)} <span>${esc(freqText(it))}</span>` : `<span>Amount not set</span>`}</div>
+    ${filled(it.renews) ? `<span class="small muted">Renews or ends ${esc(it.renews)}</span>` : ""}`;
+}
+// Everything about a bill can be changed on its card: name, what it's for, amount, how often, renewal, account, filing and notes.
+function bqEditHTML(it){
+  const b = k => `r|costs|${it.id}|${k}`, t2 = typeOf(it);
+  if (!it.type && t2) it.type = t2;   // keep its sub-category if the name changes
+  return `<div class="bqedit" id="bqe_${it.id}"><span class="eyebrow">Edit this bill</span>
+    <div class="grid2">${inputHTML(b("provider"), t("provider","Name",{ph:"How your family will know it, e.g. Netflix", live:"bq", noguard:true}), it.provider)}
+      ${inputHTML(b("desc"), t("desc","What it’s for",{ph:"e.g. Power for the house", live:"bq"}), it.desc)}
+      ${inputHTML(b("amount"), t("amount","Amount ($)",{ph:"e.g. 22.99", live:"bq", num:true, noguard:true}), it.amount)}
+      ${inputHTML(b("renews"), d("renews","Renews or ends on",{live:"bq"}), it.renews)}</div>
+    ${inputHTML(b("freq"), c("freq","How often",FREQ), it.freq)}
+    ${it.freq === "Other" ? inputHTML(b("freqOther"), t("freqOther","How often, in your words",{ph:"e.g. Every two years, each winter", live:"bq", noguard:true}), it.freqOther) : ""}
+    <div class="grid2">${inputHTML(b("paidFrom"), {k:"paidFrom", label:"Paid from", type:"acct"}, it.paidFrom)}
+      <div class="field"><span class="label">Filed under</span><div class="row" style="gap:8px">${t2 ? `<span class="tag calm">${esc(catOfType(t2))} › ${esc(t2)}</span>` : `<span class="small muted">Not filed yet</span>`}<button class="btn sm ghost" data-act="bfile" data-id="${it.id}">${ui.bFile.has(it.id) ? "Close" : "Change"}</button></div></div></div>
+    ${inputHTML(b("notes"), a("notes","Notes for your family",{rows:2}), it.notes)}
+    <div class="row between"><button class="btn sm ghost" data-act="swipefine" data-id="${it.id}">Transactions and more ›</button><button class="btn sm primary" data-act="swipeedit" data-id="${it.id}">Done editing</button></div></div>`;
+}
 function swipeHTML(){
   const sw = ui.swipe, it = S.reg.costs.find(x => x.id === sw.queue[sw.i]);
   if (!it) { sw.i++; return billsQuickHTML(); }
   const t2 = typeOf(it), seen = (it.seen || []).slice(0, 3), fmt = s => { const [y, m2, d2] = s.split("-"); return new Date(+y, m2 - 1, +d2).toLocaleDateString("en-AU", {day:"numeric", month:"short"}); };
-  const main = mainPersonObj(), mainName = main ? firstName(main.name) : "", others = familyPeople().filter(p => p !== main);
+  // Anyone in the plan can take a bill on, or someone new. Names show by first name unless two people share it.
+  const names2 = knownNames(false), main = mainPersonObj(), mainName = main ? main.name : (names2[0] || "");
+  const short = n => { const f = firstName(n); return names2.filter(o => lc(firstName(o)) === lc(f)).length > 1 ? n : f; };
+  const cur = it.outcome || "", curTo = cur === "Transfer" ? String(it.transferTo || "") : "";
+  const on = (v, to) => cur === v && (v !== "Transfer" || (to ? samePerson(curTo, to) : !curTo));
+  const btn = (v, lab, cls, to) => `<button class="btn bqa${cls || ""}${on(v, to) ? " on" : ""}" aria-pressed="${on(v, to)}" data-act="swipeset" data-v="${v}"${to ? ` data-to="${esc(to)}"` : ""}>${on(v, to) ? "✓ " : ""}${esc(lab)}</button>`;
+  const chip = (v, lab, to) => `<button class="chip${on(v, to) ? " on" : ""}" aria-pressed="${on(v, to)}" data-act="swipeset" data-v="${v}"${to ? ` data-to="${esc(to)}"` : ""}>${on(v, to) ? "✓ " : ""}${esc(lab)}</button>`;
+  const others = names2.filter(n => !samePerson(n, mainName));
+  if (curTo && !samePerson(curTo, mainName) && !others.some(n => samePerson(n, curTo))) others.unshift(curTo);
+  const editing = ui.bqEdit.has(it.id), one = !!sw.single;
   const intro = sw.intro && sw.i === 0 ? `<div class="bq-intro"><h3>${S.reg.costs.length} things keep charging you, about ${money(costsTotal())} a month.</h3>
-      <p class="muted">${sw.intro.skipped ? `I left out ${sw.intro.skipped} that look like one-offs or have stopped (Fine-tune shows them). ` : ""}Let’s go through the ${sw.queue.length} without a decision, biggest first.</p></div>` : "";
-  const others2 = it.billers && it.billers.filter(n => lc(n) !== lc(billName(it)));
-  return `${intro}<div class="bq-top"><span class="small muted">${sw.i + 1} of ${sw.queue.length}</span><div class="meter" aria-hidden="true"><span style="width:${Math.round(sw.i / sw.queue.length * 100)}%"></span></div><button class="btn sm ghost" data-act="swipestop">Stop for now</button></div>
+      <p class="muted">${sw.intro.skipped ? `I left out ${sw.intro.skipped} that look like one-offs or have stopped (Fine-tune shows them). ` : ""}Let’s go through the ${sw.queue.length} without a decision, biggest first. Tap Edit on any card to change its name, amount or how often.</p></div>` : "";
+  const top = one ? `<div class="bq-top"><span class="small muted">One bill</span><span></span><button class="btn sm ghost" data-act="swipestop">Close</button></div>`
+    : `<div class="bq-top"><span class="small muted">${sw.i + 1} of ${sw.queue.length}</span><div class="meter" aria-hidden="true"><span style="width:${Math.round(sw.i / sw.queue.length * 100)}%"></span></div><button class="btn sm ghost" data-act="swipestop">Stop for now</button></div>`;
+  return `${intro}${top}
     <div class="bqcard" id="bq_${it.id}">
-      <div class="row between" style="align-items:baseline"><h3 class="bqname">${esc(billName(it))}</h3>${t2 ? `<span class="tag calm">${esc(t2)}</span>` : ""}</div>
-      ${others2 && others2.length ? `<span class="small muted">Also billed as ${esc(others2.join(", "))}</span>` : ""}
-      <div class="bqamt">${it.amount ? `$${esc(it.amount)} <span>${esc(freqText(it))}</span>` : `<span>Amount not set</span>`}</div>
+      <div class="bqhead" id="bqh_${it.id}">${bqHeadHTML(it)}</div>
       ${seen.length ? `<div class="bqtx">${seen.map(x => `<div><span>${esc(fmt(x.d))}${x.s ? " · " + esc(String(x.s).split(/[\s_.]+/)[0]) : ""}</span><span class="num">$${Number(x.a).toFixed(2)}</span></div>`).join("")}${(it.seen || []).length > 3 ? `<span class="small muted">and ${(it.seen || []).length - 3} more</span>` : ""}</div>` : ""}
-      ${it.renews ? `<span class="small muted">Renews ${esc(it.renews)}</span>` : ""}
+      ${editing ? bqEditHTML(it) : `<div><button class="btn sm" data-act="swipeedit" data-id="${it.id}">✎ Edit name, amount, how often…</button></div>`}
       ${!t2 || ui.bFile.has(it.id) ? `<div class="bqfile"><span class="small muted">What is it?</span>${billFileHTML(it)}</div>` : ""}
     </div>
     <div class="stack" style="gap:10px"><span class="eyebrow">When you’re gone, this should…</span>
-      <div class="bqacts"><button class="btn bqa" data-act="swipeset" data-v="Cancel">Cancel it</button><button class="btn bqa" data-act="swipeset" data-v="Keep">Keep paying it</button>
-        <button class="btn bqa primary" data-act="swipeset" data-v="Transfer" data-to="${esc(mainName)}">${mainName ? "Hand it to " + esc(mainName) : "Hand it on"}</button></div>
-      <div class="row" style="gap:6px">${others.length ? `<span class="small muted">Or hand it to</span>${others.slice(0, 6).map(p => `<button class="chip" data-act="swipeset" data-v="Transfer" data-to="${esc(firstName(p.name))}">${esc(firstName(p.name))}</button>`).join("")}` : ""}<button class="chip" data-act="swipeset" data-v="Decide">Let them decide</button></div>
+      <div class="bqacts">${btn("Cancel", "Cancel it")}${btn("Keep", "Keep paying it")}${btn("Transfer", mainName ? "Hand it to " + short(mainName) : "Hand it on", " primary", mainName)}</div>
+      <div class="bqwho"><div class="row" style="gap:6px">${others.length ? `<span class="small muted">Or hand it to</span>${others.map(n => chip("Transfer", short(n), n)).join("")}` : ""}${chip("Decide", "Let them decide")}</div>
+        <div class="role-add pf-add"><input type="text" id="bqto_${it.id}" placeholder="Or someone else: their name" aria-label="Hand it to someone else"><button class="btn sm" data-act="swipeto" data-inp="bqto_${it.id}">Hand it to them</button></div></div>
     </div>
-    <div class="bq-foot"><button class="btn sm ghost" data-act="swipeback"${sw.i ? "" : " disabled"}>‹ Back</button><div class="row" style="gap:4px">${t2 ? `<button class="btn sm ghost" data-act="bfile" data-id="${it.id}">Change what it is</button>` : ""}<button class="btn sm ghost" data-act="swipenot" data-id="${it.id}">It’s not a bill</button><button class="btn sm ghost" data-act="swipeskip">Skip</button></div></div>`;
+    <div class="bq-foot">${one ? `<span></span>` : `<button class="btn sm ghost" data-act="swipeback"${sw.i ? "" : " disabled"}>‹ Back</button>`}<div class="row" style="gap:4px"><button class="btn sm ghost" data-act="swipenot" data-id="${it.id}">It’s not a bill</button>${one ? `<button class="btn sm primary" data-act="swipestop">Done</button>` : `<button class="btn sm ghost" data-act="swipeskip">Skip</button>`}</div></div>`;
 }
 function billsFlowHTML(){
   if (ui.billMode !== "fine") return billsQuickHTML();
@@ -2145,7 +2194,7 @@ function uploadStepHTML(){
 // Predict where a found biller belongs: the person's own sub-categories first, then the likely type, then the bank's category.
 function predict(x){
   if (x.kind === "debt") return;
-  const same = S.reg.costs.find(c2 => lc(c2.provider) === lc(x.provider) && typeOf(c2));
+  const same = S.reg.costs.find(c2 => isBilledAs(c2, [x.provider]) && typeOf(c2));
   const sug = suggestTypes(x.provider), t2 = same ? typeOf(same) : (sug.find(isSelected) || sug[0] || "");
   x.alloc = t2 ? {cat:catOfType(t2), type:t2} : {cat:x.category && x.category !== "Other" ? x.category : "", type:""};
   x.predicted = !!(x.alloc.cat || x.alloc.type);
@@ -2153,9 +2202,20 @@ function predict(x){
   x.skip = !x.alloc.type && (!!x.stopped || x.pick === false);
   if ((S.notBills || []).some(n => lc(billName(n)) === lc(x.provider) || (n.billers || []).some(b2 => lc(b2) === lc(x.provider)))) { x.skip = true; x.note = "You said this isn’t a bill. " + (x.note || ""); }
 }
-const needsAttention = x => !x.skip && (x.editing || (x.kind !== "debt" && (!(x.alloc && x.alloc.type) || (x.stopped && !x.confirmed))));
+const needsAttention = x => !x.skip && (x.editing || x.editDetails || (x.kind !== "debt" && (!(x.alloc && x.alloc.type) || (x.stopped && !x.confirmed))));
+// "$22.99 monthly" for a found biller, whatever the person has typed into its amount.
+const foundAmt = x => { const n = parseFloat(String(x.amount == null ? "" : x.amount).replace(/[^0-9.]/g, "")); return isFinite(n) && n > 0 ? `$${n.toFixed(2)}${x.freq ? " " + freqText(x) : ""}` : ""; };
+// Name, amount and how often, changed before the biller is saved.
+function allocEditHTML(x, i){
+  const fb = k => `fi|${i}|${k}`;
+  return `<div class="bqedit"><div class="grid2">${inputHTML(fb("provider"), t("provider","Name",{ph:"How your family will know it", noguard:true}), x.provider)}
+      ${inputHTML(fb("amount"), t("amount","Amount ($)",{ph:"e.g. 22.99", num:true, noguard:true}), x.amount == null ? "" : String(x.amount))}</div>
+    ${inputHTML(fb("freq"), c("freq","How often",FREQ), x.freq)}
+    ${x.freq === "Other" ? inputHTML(fb("freqOther"), t("freqOther","How often, in your words",{ph:"e.g. Every two years", noguard:true}), x.freqOther) : ""}
+    <div><button class="btn sm primary" data-act="aname" data-i="${i}">Done</button></div></div>`;
+}
 function allocCardHTML(x, i){
-  const amount = x.amount ? `$${Number(x.amount).toFixed(2)}${x.freq ? " " + x.freq.toLowerCase() : ""}` : "";
+  const amount = foundAmt(x);
   const open = !!x.showTx, ntx = (x.txs || []).length;
   let where;
   if (x.kind === "debt") where = `<p class="small"><span class="tag">Money › Debts</span> Buy now, pay later is filed as a debt.</p>`;
@@ -2172,7 +2232,9 @@ function allocCardHTML(x, i){
   const status = x.skip ? `<span class="tag">Not a bill: won’t be saved</span>` : x.kind === "debt" ? "" : stillPaying
     ? `<span class="row" style="gap:6px"><span class="small">It seems to have stopped. Still paying it?</span><button class="btn sm" data-act="aconfirm" data-i="${i}">Yes, keep it</button></span>`
     : x.alloc && x.alloc.type ? `<span class="row" style="gap:6px"><span class="tag calm">${esc(x.alloc.cat)} › ${esc(x.alloc.type)}</span>${x.editing ? `<button class="btn sm" data-act="aconfirm" data-i="${i}">Done</button>` : ""}</span>` : `<span class="tag lamp">Needs a sub-category</span>`;
-  return `<div class="acard${x.skip ? " skipped" : ""}"><div class="acard-h"><strong>${esc(x.provider)}</strong>${x.stopped ? `<span class="tag lamp">May have stopped</span>` : ""}<span class="amt">${esc(amount)}</span></div>
+  return `<div class="acard${x.skip ? " skipped" : ""}"><div class="acard-h"><strong>${esc(x.provider || x.orig || "Unnamed")}</strong>${x.stopped ? `<span class="tag lamp">May have stopped</span>` : ""}<span class="amt">${esc(amount)}</span>${x.skip || x.editDetails ? "" : `<button class="btn sm ghost" data-act="aname" data-i="${i}">✎ Edit</button>`}</div>
+    ${x.orig && lc(x.orig) !== lc(x.provider) ? `<p class="small muted">On your statements as ${esc(x.orig)}</p>` : ""}
+    ${x.editDetails && !x.skip ? allocEditHTML(x, i) : ""}
     ${x.note ? `<p class="small muted">${esc(x.note)}</p>` : ""}
     ${ntx ? `<div><button class="btn sm txtoggle" data-act="atx" data-i="${i}" aria-expanded="${open}">${open ? "▾ Hide transactions" : `▸ Show ${ntx} transaction${ntx === 1 ? "" : "s"}`}</button>${open ? txTableHTML(x.txs) : ""}</div>` : ""}
     ${x.skip ? "" : where}
@@ -2202,10 +2264,10 @@ function allocateStepHTML(){
   const attention = idx.filter(i => needsAttention(items[i])), skipped = idx.filter(i => items[i].skip), filed = idx.filter(i => !items[i].skip && !attention.includes(i));
   const done = items.length - attention.length;
   const fileRow = i => { const x = items[i], a = x.alloc || {};
-    return `<div class="frow-c"><strong>${esc(x.provider)}</strong><span class="small muted">${x.amount ? "$" + Number(x.amount).toFixed(2) + (x.freq ? " " + x.freq.toLowerCase() : "") : ""}</span>
+    return `<div class="frow-c"><strong>${esc(x.provider || x.orig || "Unnamed")}</strong><span class="small muted">${esc(foundAmt(x))}</span>
       <span class="tag calm">${x.kind === "debt" ? "Money › Debts" : esc(a.cat) + " › " + esc(a.type)}</span>${x.predicted && !x.confirmed ? `<span class="small muted">predicted</span>` : ""}
       <button class="btn sm ghost" data-act="aedit" data-i="${i}">Change</button></div>`; };
-  const skipRow = i => { const x = items[i]; return `<div class="frow-c"><strong>${esc(x.provider)}</strong><span class="small muted">${x.amount ? "$" + Number(x.amount).toFixed(2) : ""} ${esc(x.note || "")}</span><button class="btn sm ghost" data-act="askip" data-i="${i}">It is a bill</button></div>`; };
+  const skipRow = i => { const x = items[i]; return `<div class="frow-c"><strong>${esc(x.provider || x.orig || "Unnamed")}</strong><span class="small muted">${esc(foundAmt(x))} ${esc(x.note || "")}</span><button class="btn sm ghost" data-act="askip" data-i="${i}">It is a bill</button></div>`; };
   return `<div class="stack"><h3>Allocate</h3><p class="help">${esc(ui.find.msg || "")} Most billers were filed automatically. Only the ones that need you are shown here: as you deal with each one, it moves to the Allocated list.</p>
      <div class="meter" aria-hidden="true"><span style="width:${Math.round(done / items.length * 100)}%"></span></div><p class="small muted">${done} of ${items.length} sorted · ${attention.length} need you</p></div>
    ${readReportHTML()}
@@ -2321,6 +2383,7 @@ function billFileHTML(it){
 function billCardHTML(it){
   const t2 = typeOf(it), b = k => `r|costs|${it.id}|${k}`, ntx = (it.seen || []).length, txo = ui.txOpen.has(it.id), filing = !t2 || ui.bFile.has(it.id), more = ui.bMore.has(it.id);
   const amount = it.amount ? `$${esc(it.amount)} ${esc(freqText(it))}` : "";
+  if (more && !it.type && t2) it.type = t2;   // keep its sub-category if the name changes
   const others = (it.billers || []).filter(n => lc(n) !== lc(it.provider) && lc(n) !== lc(billName(it)));
   const del = ui.confirmDel === it.id ? `<span class="small muted">Delete this bill?</span><button class="btn sm" data-act="delyes" data-reg="costs" data-id="${it.id}">Yes, delete</button><button class="btn sm ghost" data-act="delno">Keep it</button>` : `<button class="btn sm ghost" data-act="del" data-id="${it.id}">Delete this bill</button>`;
   return `<div class="acard bill${decided(it) ? "" : " undecided"}" id="bill_${it.id}">
@@ -2331,8 +2394,8 @@ function billCardHTML(it){
     <div class="decide">${inputHTML(b("outcome"), c("outcome","When I’m gone, what should happen to it?",OUTCOMES), it.outcome)}
       ${it.outcome === "Transfer" ? inputHTML(b("transferTo"), p("transferTo","Who to?",{one:true}), it.transferTo) : ""}
       ${inputHTML(b("paidFrom"), {k:"paidFrom", label:"Paid from", type:"acct"}, it.paidFrom)}</div>
-    <div class="row between"><button class="btn sm ghost" data-act="bmore" data-id="${it.id}" aria-expanded="${more}">${more ? "▾ Fewer details" : "▸ More details: amount, how often, renewal, notes"}</button><button class="btn sm ghost" data-act="notbill" data-id="${it.id}">It’s not a bill</button></div>
-    ${more ? `<div class="grid2">${inputHTML(b("provider"), t("provider","Name of the company"), it.provider)}${inputHTML(b("amount"), t("amount","Amount ($)",{live:"total"}), it.amount)}
+    <div class="row between"><button class="btn sm ghost" data-act="bmore" data-id="${it.id}" aria-expanded="${more}">${more ? "▾ Fewer details" : "▸ Edit name, amount, how often, renewal and notes"}</button><button class="btn sm ghost" data-act="notbill" data-id="${it.id}">It’s not a bill</button></div>
+    ${more ? `<div class="grid2">${inputHTML(b("provider"), t("provider","Name",{ph:"How your family will know it", noguard:true}), it.provider)}${inputHTML(b("amount"), t("amount","Amount ($)",{live:"total", num:true, noguard:true}), it.amount)}
       ${inputHTML(b("freq"), c("freq","How often",FREQ), it.freq)}${it.freq === "Other" ? inputHTML(b("freqOther"), t("freqOther","How often?"), it.freqOther) : ""}
       ${inputHTML(b("renews"), d("renews","Renews or ends on"), it.renews)}${inputHTML(b("notes"), a("notes","Notes",{rows:2}), it.notes)}</div><div class="row" style="justify-content:flex-end">${del}</div>` : ""}
   </div>`;
@@ -3945,20 +4008,28 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
     if (!exists) { S.customTypes = S.customTypes || {}; (S.customTypes[x.alloc.cat] = S.customTypes[x.alloc.cat] || []).push(t2); }
     selectType(t2, true); x.alloc = {cat:catOfType(t2), type:t2}; x.predicted = false; save(); rerender(); },
   askip(el){ const x = ui.find.items[+el.dataset.i]; if (x) x.skip = !x.skip; rerender(); },
+  // Edit a found biller's name, amount and how often. Its name on the statement is kept, to match future uploads.
+  aname(el){ const x = ui.find.items[+el.dataset.i]; if (!x) return;
+    if (!x.editDetails) { x.orig = x.orig || x.provider; x.editDetails = true; }
+    else { x.provider = String(x.provider || "").trim() || x.orig; x.editDetails = false; }
+    rerender(); },
   asave(){ const {added, merged} = saveFound();
     ui.find = {state:"idle", items:[], msg:"", src:""}; ui.moreTypes = new Set(); ui.billStep = "list"; touched(); save(); render(); window.scrollTo(0, 0);
     toast([added ? `${added} bill${added === 1 ? "" : "s"} added` : "", merged ? `${merged} added to bills you already had` : ""].filter(Boolean).join(", ") || "Nothing to save"); },
   allx(){ ui.allOpen = !ui.allOpen; rerender(); },
   bmode(el){ ui.billMode = el.dataset.v; ui.swipe = null; if (el.dataset.v === "fine" && !ui.billStep) ui.billStep = S.reg.costs.length ? "list" : "cats"; rerender(); },
   swipestart(){ startSwipe(); },
-  swipeone(el){ ui.swipe = {queue:[el.dataset.id], i:0, done:[]}; rerender(); },
-  swipeset(el){ const sw = ui.swipe, it = sw && S.reg.costs.find(x => x.id === sw.queue[sw.i]); if (!it) return;
-    it.outcome = el.dataset.v; it.transferTo = el.dataset.v === "Transfer" ? (el.dataset.to || it.transferTo || "") : it.transferTo;
-    sw.done.push({id:it.id, o:it.outcome}); sw.i++; touched(); save(); ui.bFile.delete(it.id); rerender();
-    toast(`${billName(it)}: ${el.dataset.v === "Transfer" && el.dataset.to ? "hand it to " + el.dataset.to : OUT_WORD[el.dataset.v].toLowerCase()}`); },
+  // A bill tapped in the list opens on its own, ready to edit.
+  swipeone(el){ ui.swipe = {queue:[el.dataset.id], i:0, done:[], single:true}; ui.bqEdit.add(el.dataset.id); rerender(); },
+  swipeset(el){ swipeDecide(el.dataset.v, el.dataset.to); },
+  swipeto(el){ const inp = document.getElementById(el.dataset.inp), name = inp && inp.value.trim().replace(/\s+/g, " "); if (!name) { if (inp) inp.focus(); return; } swipeDecide("Transfer", name); },
+  swipeedit(el){ const id = el.dataset.id; ui.bqEdit.has(id) ? ui.bqEdit.delete(id) : ui.bqEdit.add(id); rerender();
+    if (ui.bqEdit.has(id)) { const inp = document.querySelector(`#bqe_${id} input`); if (inp && !window.matchMedia("(pointer:coarse)").matches) inp.focus(); } },
+  swipefine(el){ const id = el.dataset.id; ui.swipe = null; ui.billMode = "fine"; ui.billStep = "list"; ui.open = id; render();
+    const c2 = document.getElementById("bill_" + id); if (c2) c2.scrollIntoView({block:"start"}); },
   swipeback(){ const sw = ui.swipe; if (sw && sw.i > 0) { sw.i--; rerender(); } },
   swipeskip(){ const sw = ui.swipe; if (sw) { sw.i++; rerender(); } },
-  swipestop(){ ui.swipe = null; rerender(); },
+  swipestop(){ ui.swipe = null; ui.bqEdit.clear(); rerender(); },
   swipenot(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id), sw = ui.swipe; if (!it || !sw) return;
     S.reg.costs = S.reg.costs.filter(x => x !== it); S.notBills = (S.notBills || []).concat(it); sw.queue.splice(sw.i, 1); save(); rerender(); toast(`${billName(it)} moved to Not bills. Future uploads will leave it out.`); },
   notbill(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id); if (!it) return;
@@ -4065,7 +4136,8 @@ document.addEventListener("input", e => {
   if (el.dataset.live === "rq" && ui.research) { ui.research.q = v; refreshResearch(); return; }
   if (el.dataset.live === "allq") { const box = document.getElementById("alltx"); if (box) box.innerHTML = allTxTableHTML(allTxRows(v)); }
   if (el.dataset.live === "total") { const tEl = document.getElementById("cost-total"); if (tEl) tEl.textContent = money(costsTotal()); }
-  if (b.startsWith("u|")) return;
+  if (el.dataset.live === "bq") { const id = b.split("|")[2], it = S.reg.costs.find(x => x.id === id), box = document.getElementById("bqh_" + id); if (it && box) box.innerHTML = bqHeadHTML(it); }
+  if (b.startsWith("u|") || b.startsWith("fi|")) return;
   if (b.startsWith("a|")) { S.stamps = S.stamps || {}; S.stamps[b.slice(2)] = Date.now(); }
   touched(); save();
 });
@@ -4115,12 +4187,12 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey && (e.target.id === "home_text" || e.target.id === "cap_text") && !window.matchMedia("(pointer:coarse)").matches) { e.preventDefault(); e.target.id === "home_text" ? ACT.homesend() : capSend(); return; }
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "ask_text") { e.preventDefault(); askPlan(); return; }
   if (e.key === "Escape" && ui.pop) { ui.pop = null; rerender(); return; }
-  if (e.key === "Enter" && e.target.matches && e.target.matches(".pf-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=pnew], [data-act=qbillnew], [data-act=newrole]"); if (btn) ACT[btn.dataset.act](btn); return; }
+  if (e.key === "Enter" && e.target.matches && e.target.matches(".pf-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=pnew], [data-act=qbillnew], [data-act=newrole], [data-act=swipeto]"); if (btn) ACT[btn.dataset.act](btn); return; }
   if (e.key === "Enter" && e.target.matches && e.target.matches(".role-add input")) { e.preventDefault(); const btn = e.target.parentElement.querySelector("[data-act=newrole]"); if (btn) ACT.newrole(btn); }
 });
 
 /* ================= boot ================= */
-window.__amfy = {parseStatement, parseStatements};
+window.__amfy = {parseStatement, parseStatements, plan:() => S, samePerson};   // for the automated tests
 loadPool();
 const local = loadLocal();
 if (local) { S = local; try { tidyBills(); if (tidyBills.changed) save(); } catch(e) {} if (S.started) { ui.view = S.scanDone ? "today" : "scan"; } }

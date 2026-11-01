@@ -108,7 +108,7 @@ check('settings: backup and restore',!!q('#datacard [data-act=backup]')&&!!q('la
 check('settings: Aa wording mentions the phone Menu',/Menu on a phone/.test(main()));
 const ch1=q('main .chip');check('chips at least 44px tall',ch1&&ch1.getBoundingClientRect().height>=44,ch1&&Math.round(ch1.getBoundingClientRect().height));
 const dt=new DataTransfer();dt.items.add(new File([JSON.stringify({app:'FirstLight',kind:'backup',version:1,savedAt:'2026-10-01T00:00:00Z',plan:{started:true,scanDone:true,settings:{name:'Robin',subject:'me',country:'AU',region:'NSW'},reg:{people:[{id:'x1',name:'Sam Robin',roles:[]}]}},tx:[]})],'b.json',{type:'application/json'}));
-const fin=q('#restore_in');fin.files=dt.files;fin.dispatchEvent(new Event('change',{bubbles:true}));await wait(200);
+const fin=q('#restore_in');fin.files=dt.files;fin.dispatchEvent(new Event('change',{bubbles:true}));for(let i=0;i<60&&!q('[data-act=restoreyes]');i++)await wait(50);
 check('restore asks first',!!q('[data-act=restoreyes]'),(q('#datacard .note')||{}).textContent);
 click(q('[data-act=restoreyes]'));await wait(80);
 check('restore replaces the plan',/Robin/.test(((q('.today .eyebrow')||{}).textContent)||''),((q('.today .eyebrow')||{}).textContent));
