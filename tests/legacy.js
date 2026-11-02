@@ -3,7 +3,7 @@
 localStorage.setItem('amfy-plan-v2', JSON.stringify({started:true, scanDone:true,
   settings:{name:"Lee", tone:"soft", faith:"neutral", country:"AU", region:"NSW", subject:"me", subjectName:""},
   scan:{retire:"yes", partner:"married"},
-  answers:{"money.points.list":"Qantas Frequent Flyer, Flybuys, a gift card in the kitchen drawer", "admin.vault.pm":"bitwarden", "admin.vault.pmaccess":"no"},
+  answers:{"money.points.list":"Qantas Frequent Flyer, Flybuys, a gift card in the kitchen drawer", "admin.vault.pm":"bitwarden", "admin.vault.pmaccess":"no", "admin.gov.list":["mygov","centrelink"], "admin.gov.notes":"Cards are in my wallet"},
   reg:{people:[{id:"p1", name:"Jo Smith", rel:"Wife", roles:["digital"]}, {id:"p2", name:"Sam Smith", rel:"Son", roles:[]}],
        retire:[{id:"r1", fund:"HESTA", nomination:"Binding (non-lapsing)", nominee:"Jo 50%, Sam 30% and Mia 20%"}],
        belongings:[{id:"b1", item:"Ring", forWhom:"Jo & Sam"}],
@@ -32,6 +32,8 @@ check('old written points list becomes one card each',(P.reg.points||[]).map(x=>
 check('old written points list is not kept twice',!('money.points.list' in P.answers),JSON.stringify(P.answers));
 check('old single password manager becomes a card with its status and people',JSON.stringify((P.reg.pms||[]).map(x=>[x.what,x.access,(x.people||[]).map(p=>p.name)]))==='[["Bitwarden","no",["Jo Smith"]]]',JSON.stringify(P.reg.pms));
 check('old password manager answers are not kept twice',!('admin.vault.pm' in P.answers)&&!('admin.vault.pmaccess' in P.answers));
+check('old ticked government services become one card each',(P.reg.govs||[]).map(x=>x.what).join(', ')==='myGov, Centrelink',JSON.stringify(P.reg.govs));
+check('the old tick list is not kept twice, and the notes stay',!('admin.gov.list' in P.answers)&&P.answers['admin.gov.notes']==='Cards are in my wallet',JSON.stringify(P.answers));
 check('heirlooms have no shares added',P.reg.belongings[0].forWhom==='Jo & Sam',JSON.stringify(P.reg.belongings[0].forWhom));
 await go('personal','belongings');
 check('old "Jo & Sam" reads as two people',/for Jo and Sam/.test((all('.entry-sub')[0]||{}).textContent||''),(all('.entry-sub')[0]||{}).textContent);

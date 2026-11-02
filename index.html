@@ -609,7 +609,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const fnv = (x, ...a) => typeof x === "function" ? x(...a) : x;
 const cap = s => String(s || "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const filled = v => Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
-const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],points:[],pms:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
+const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],points:[],pms:[],govs:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
 const blank = () => ({v:2, started:false, example:false, scanDone:false,
   settings:{name:"", tone:"soft", faith:"neutral", country:"AU", region:"NSW", subject:"me", subjectName:""},
   scan:{}, check:{}, answers:{}, status:{}, reg:blankReg(),
@@ -745,6 +745,114 @@ function movePms(s){
   if (names[pm] && !s.reg.pms.length) s.reg.pms.push({id:uid(), what:names[pm], access:["yes","no","unsure"].includes(a2["admin.vault.pmaccess"]) ? a2["admin.vault.pmaccess"] : "",
     people:(s.reg.people || []).filter(p => (p.roles || []).includes("digital") && filled(p.name)).map(p => ({name:p.name, pct:""}))});
   delete a2["admin.vault.pm"]; delete a2["admin.vault.pmaccess"]; return s;
+}
+
+/* ================= government services ================= */
+// For each service: how to let someone deal with it for you now, and what the family does later.
+// Checked against each agency's own pages, November 2026. front: a sign-in only (myGov, RealMe). act:false: nobody
+// needs to act for you. ref:false: the number is too sensitive for the plan (tax file or IRD number). tax: ask for the tax agent.
+const SA_DEATH = ["https://www.servicesaustralia.gov.au/what-to-do-when-someone-dies","Services Australia: when someone dies"];
+const GOV_AU = [
+ {key:"mygov", name:"myGov", re:/\bmy ?gov\b/i, front:true, act:false, todo:"Leave their myGov account alone",
+  steps:["myGov is the front door to your other services. Nobody else is allowed to sign in to your account, so never share your sign-in.",
+   "Sign in and look at the services linked to your account. Add a card here for each one, such as Centrelink, Medicare or the ATO.",
+   "Each service has its own way to let someone deal with it for you. Its card shows how."],
+  family:"Don’t sign in to their myGov account. Tell each linked service instead. The account closes by itself after a while unused, so there’s no need to close it.",
+  after:["https://my.gov.au/en/services/health-and-disability/when-someone-close-to-you-dies/death-of-someone-close-to-you-checklist","myGov’s checklist for when someone dies"]},
+ {key:"centrelink", name:"Centrelink", re:/centrelink|age pension|carer payment|services australia/i, pays:true,
+  steps:["Sign in to your Centrelink online account through myGov, and add a nominee.",
+   "A correspondence nominee can talk to Centrelink, report changes and sign forms for you. A payment nominee receives your payments, and must use them for you. One person can be both.",
+   "They accept the request in their own Centrelink online account within 14 days."],
+  note:"You can have one nominee of each type. It stays in place until one of you cancels it.",
+  family:"Tell Services Australia within 28 days: call 132 300 and say “bereavement”, or send the Advice of death form. That one notice updates Centrelink, Medicare and Child Support. Payments made after the death usually have to be paid back. A partner may be able to get a bereavement payment.",
+  link:["https://www.servicesaustralia.gov.au/individuals/online-help/centrelink/add-nominee","How to add a nominee"], after:SA_DEATH},
+ {key:"medicare", name:"Medicare", re:/medicare/i,
+  steps:["Medicare is separate from Centrelink: a Centrelink nominee can’t deal with Medicare for you.",
+   "Someone can act for you with Medicare if they hold your power of attorney for money matters, or are your guardian. They give Medicare a copy, at a service centre or by mail or email."],
+  note:"If you haven’t signed a power of attorney yet, it’s under Personal › Who can act for you.",
+  family:"The Advice of death form to Services Australia updates Medicare too. Anyone else on the card needs a new one: ask for it, because it isn’t sent automatically.",
+  link:["https://www.servicesaustralia.gov.au/someone-to-act-for-you-with-medicare","Someone to act for you with Medicare"], after:SA_DEATH},
+ {key:"ato", name:"ATO", the:true, re:/\bato\b|tax office|taxation office/i, ref:false, tax:true,
+  steps:["If a registered tax agent does your tax, they can already deal with the ATO for you. Say who they are below.",
+   "You can also phone the ATO to nominate a legal representative, such as your lawyer, to deal with them for you. It lasts until you phone to cancel it.",
+   "Never write your tax file number in this plan. If your family will need it, put it in the vault."],
+  family:"The executor tells the ATO about the death, then lodges a final “date of death” tax return, on paper or through a tax agent (not through myTax). Income after the death goes in a separate return for the estate.",
+  after:["https://www.ato.gov.au/individuals-and-families/deceased-estates/doing-a-final-tax-return-for-the-deceased-person","ATO: the final tax return"]},
+ {key:"agedcare", name:"My Aged Care", re:/aged care/i, care:true,
+  steps:["Register someone as your supporter. Since November 2025, supporters have replaced representatives.",
+   "A supporter can get information from My Aged Care and your providers, and help you make and pass on your own decisions.",
+   "Call My Aged Care on 1800 200 422, or use the supporter registration form on their website."],
+  family:"Tell the aged care provider, and call My Aged Care on 1800 200 422.",
+  link:["https://www.myagedcare.gov.au/my-aged-care-representatives","My Aged Care: supporters"]},
+ {key:"dva", name:"DVA", re:/\bdva\b|veterans/i, pays:true,
+  steps:["Call DVA on 1800 VETERAN (1800 838 372), and ask how to let someone deal with DVA for you.",
+   "If you have a Gold or White Card, say below where it’s kept."],
+  family:"Call DVA on 1800 VETERAN (1800 838 372), or email Bereavement.SA@dva.gov.au. If they were part of a couple, a bereavement payment is usually paid automatically.",
+  after:["https://www.dva.gov.au/families-and-dependants/reporting-the-death-of-a-dva-client","DVA: reporting a death"]},
+ {key:"ndis", name:"NDIS", the:true, re:/\bndis\b/i, care:true,
+  steps:["The NDIS can record a nominee for you. A plan nominee can do things under your plan for you. A correspondence nominee can talk to the NDIA and get your letters.",
+   "Ask your NDIS contact, or call 1800 800 110, to set one up."],
+  family:"Tell the NDIA: call 1800 800 110, or use the “Notify the NDIA when a participant dies” form. Providers can’t claim for supports after the date of death, and someone can get 90 days’ access to the portal to settle what’s owed.",
+  after:["https://www.ndis.gov.au/understanding/families-and-carers/what-do-when-someone-dies","NDIS: when a participant dies"]},
+ {key:"childsupport", name:"Child Support", re:/child support/i, pays:true,
+  steps:["Child Support has its own arrangements, separate from Centrelink and Medicare.",
+   "Call Child Support on 131 272, and ask how to let someone deal with them for you."],
+  family:"The Advice of death form to Services Australia updates Child Support too. Money owed to or by the estate is sorted out with the executor.",
+  after:SA_DEATH}];
+const GOV_NZ = [
+ {key:"realme", name:"RealMe", re:/\breal ?me\b/i, front:true, act:false, todo:"Leave their RealMe login alone",
+  steps:["RealMe is only a login. Nobody else should use yours, so never share it.",
+   "Add a card here for each service you sign in to with it, such as myIR or MyMSD. Each one has its own way to let someone deal with it for you."],
+  family:"Don’t sign in as them. Tell each service instead. The End of Life Service on govt.nz lists who to tell."},
+ {key:"ird", name:"Inland Revenue (myIR)", re:/inland revenue|\bmyir\b|\bird\b/i, ref:false, tax:true,
+  steps:["In myIR, go to I want to… › Access management › Add a nominated person. You need their name, IRD number and contact details.",
+   "They link to your account through their own myIR login, never yours. They can talk to Inland Revenue, sign your returns and get your letters.",
+   "It lasts until you remove them. Never write your IRD number in this plan: put it in the vault if your family will need it."],
+  family:"Tell Inland Revenue about the death first. Then call 0800 227 774 to ask whether a final income tax return, or an estate return, is needed.",
+  link:["https://www.ird.govt.nz/managing-my-tax/getting-someone-to-act-on-my-behalf/nominated-person","Inland Revenue: nominated person"],
+  after:["https://www.ird.govt.nz/situations/im-looking-after-the-affairs-of-someone-who-has-died","Inland Revenue: when someone has died"]},
+ {key:"msd", name:"MSD / Work and Income", re:/\bmsd\b|\bmymsd\b|work and income|\bwinz\b|nz super/i, pays:true,
+  steps:["Fill in the Appointment of an agent form with the person you choose. You both sign it, and it says what they can do for you.",
+   "Take it to a Work and Income service centre, or call them to ask how to send it.",
+   "An agent can’t use MyMSD for you. For a single meeting or call, you can just tell them your agent can speak for you."],
+  family:"Tell Work and Income: register a senior’s death online, or call 0800 552 002 (NZ Super or Veteran’s Pension) or 0800 559 009. A partner’s NZ Super moves to the single rate. A Funeral Grant may help if the estate can’t cover the funeral.",
+  link:["https://www.workandincome.govt.nz/on-a-benefit/your-rights-and-responsibilities/having-someone-act-on-your-behalf","Work and Income: someone to act for you"],
+  after:["https://www.workandincome.govt.nz/on-a-benefit/tell-us/client-dies","Work and Income: when a client dies"]},
+ {key:"acc", name:"ACC", re:/\bacc\b/i, care:true,
+  steps:["Fill in ACC’s Authority to act form (ACC5937), for one claim or all of them. Email or post it, or take it to ACC.",
+   "It doesn’t cover claims made later, and it ends when you die."],
+  family:"Tell ACC about the death. If it was caused by an injury, ACC may be able to help the family.",
+  link:["https://acc.co.nz/im-injured/claim-help/giving-authority-to-act","ACC: someone to talk to us for you"],
+  after:["https://acc.co.nz/im-injured/financial-support/financial-support-after-death","ACC: support after a death"]},
+ {key:"csc", name:"Community Services Card", re:/community services card/i, act:false,
+  steps:["The card comes from Work and Income, so an agent you appoint with Work and Income covers it too."],
+  family:"Telling Work and Income covers this card too."},
+ {key:"supergold", name:"SuperGold Card", re:/supergold/i, act:false, ref:false,
+  steps:["Nobody needs to act for you on this card. It comes with NZ Super, from Work and Income."],
+  family:"Telling Work and Income covers this card too."},
+ {key:"kainga", name:"Kāinga Ora", re:/k[aā]inga ora|housing new zealand/i,
+  steps:["Ask Kāinga Ora how to name someone they can talk to about your tenancy."],
+  family:"Tell Kāinga Ora about the death, and ask what happens to the tenancy and anyone else living there."}];
+const GOV_OTHER = {key:"other", name:"Another government service",
+  steps:["Ask them how to let someone deal with them for you. Most call it a nominee, an agent or an authorised person.", "Many also accept a power of attorney."],
+  family:"Tell them about the death, and ask what they need."};
+const govList = () => L().nz ? GOV_NZ : GOV_AU;
+const govGuide = x => govList().concat(L().nz ? GOV_AU : GOV_NZ).find(g => g.re.test(x.what || "")) || GOV_OTHER;
+// The service's name in a sentence: "the ATO", "the NDIS", but "Centrelink".
+const govName = x => { const g = govGuide(x), n = x.what || (g === GOV_OTHER ? "the government service" : g.name); return (g.the && lc(n) === lc(g.name) ? "the " : "") + n; };
+function govHowHTML(x){
+  const g = govGuide(x), nm = esc(govName(x)), lk = l => l ? `<p class="small"><a href="${esc(l[0])}" target="_blank" rel="noopener">${esc(l[1])} ›</a></p>` : "";
+  return `<div class="howto"><span class="label">${g.front ? "How " + esc(x.what || g.name) + " works" : g.act === false ? "Who can deal with it for you" : "How to let someone deal with " + nm + " for you"}</span>
+    <ol>${g.steps.map(s2 => `<li>${esc(s2)}</li>`).join("")}</ol>${g.note ? `<p class="help">${esc(g.note)}</p>` : ""}${lk(g.link)}</div>
+    <div class="howto"><span class="label">When the time comes, your family should</span><p>${esc(g.family)}</p>${lk(g.after)}</div>`;
+}
+// Plans from before one card per service: each service that was ticked becomes a card.
+function moveGovs(s){
+  const a2 = s.answers || {}, list = a2["admin.gov.list"]; if (!Array.isArray(list)) return s;
+  if (!Array.isArray(s.reg.govs)) s.reg.govs = [];
+  const all = s.settings && s.settings.country === "NZ" ? GOV_NZ.concat(GOV_AU) : GOV_AU.concat(GOV_NZ);
+  if (!s.reg.govs.length) list.forEach(k => { const g = all.find(g2 => g2.key === k); if (g) s.reg.govs.push({id:uid(), what:g.name}); });
+  delete a2["admin.gov.list"]; return s;
 }
 const t = (k,label,o={}) => ({k,label,type:"text",...o});
 const a = (k,label,o={}) => ({k,label,type:"area",...o});
@@ -1089,6 +1197,21 @@ const REG = {
       t("kit","Where’s the emergency kit or recovery code kept? (the place only)",{ph:"e.g. Sealed envelope with my will"}),
       a("notes","Notes",{rows:2, more:true})],
     entryHow:x => pmHowHTML(x)},
+  // Government services: one card each, with how to let someone deal with it for you, and what the family does later.
+  govs:{noun:"service", title:x => x.what,
+    sub:x => { const g = govGuide(x); return [x.gets, g.act === false ? "" : x.act === "yes" ? (filled(x.actFor) ? "dealt with by " + whoText(x.actFor) : "someone can deal with it for you") : x.act === "no" ? "nobody set up to deal with it yet" : "",
+      x.ref && "number ends " + x.ref].filter(Boolean).join(" · "); },
+    presets:() => govList().filter(g => !S.reg.govs.some(x => govGuide(x) === g)).map(g => ({label:g.name, data:{what:g.name}})),
+    fields:() => [t("what","Service",{ph:L().nz ? "e.g. Inland Revenue" : "e.g. Centrelink"}),
+      t("gets","What you have with them",{show:x => !govGuide(x).front, ph:L().nz ? "e.g. NZ Super, a Community Services Card" : "e.g. Age Pension, a Medicare card, an NDIS plan"}),
+      t("ref","Your number with them (last 4 only)",{digits:true, show:x => !govGuide(x).front && govGuide(x).ref !== false, help:"Your full customer or file number can go in the vault."}),
+      t("login","Which email it’s under",{show:x => !!govGuide(x).front, ph:"e.g. my Gmail address (never the password)"}),
+      c("act","Is someone set up to deal with them for you?",ACC3,{show:x => govGuide(x).act !== false}),
+      p("actFor","Who?",{show:x => x.act === "yes" && govGuide(x).act !== false, help:"The nominee, agent or supporter they have on record."}),
+      p("agent","Your tax agent or accountant",{one:true, pros:true, show:x => !!govGuide(x).tax}),
+      t("where","Where are the card and letters kept?",{show:x => !govGuide(x).front, ph:"e.g. Wallet, and the blue folder in the study"}),
+      a("notes","Notes",{rows:2, more:true})],
+    entryHow:x => govHowHTML(x)},
   // Points, vouchers and credit: set out like assets, with who gets them and the details needed to claim them.
   points:{noun:"card or program", title:x => x.what || x.type,
     sub:x => [x.what && x.type, x.balance, x.expires && "expires " + x.expires, x.outcome === "Close" ? "close it" : filled(x.intendedFor) && "to " + whoText(x.intendedFor)].filter(Boolean).join(" · "),
@@ -1134,9 +1257,6 @@ const REG = {
 };
 
 /* ================= the five areas ================= */
-const GOV = () => L().nz
-  ? [["realme","RealMe"],["ird","Inland Revenue (myIR)"],["msd","MSD / MyMSD"],["acc","ACC"],["csc","Community Services Card"],["supergold","SuperGold Card"],["kainga","Kāinga Ora"]]
-  : [["mygov","myGov"],["medicare","Medicare"],["centrelink","Centrelink"],["ato","ATO"],["agedcare","My Aged Care"],["dva","DVA"],["ndis","NDIS"],["childsupport","Child Support"]];
 const CHAPTERS = [
  {id:"home", title:"Home", short:"Getting in, how things work, and the people you call.",
   intro:{soft:"Everything someone would need to look after your home if you weren’t there, whether that’s for a week in hospital or for good.", neutral:"How your home works, and who to call.", direct:"Access, systems, maintenance and contacts for the house."},
@@ -1194,8 +1314,9 @@ const CHAPTERS = [
   steps:[
    {id:"bills", title:"Bills and subscriptions", why:"Everything that keeps charging. For each one, say whether to cancel, keep or hand it on.", reg:"costs", catalogue:true, finder:true},
    {id:"docs", title:"Important documents", why:"The original will and several other documents will be needed. Tap the ones you have.", reg:"docs"},
-   {id:"gov", title:"Government services", why:"These need to be told, and often hold payments or records someone will need.",
-    fields:[m("list","Which do you use?",GOV), a("notes","Where are the cards and letters? Anything someone should know?",{rows:3})]},
+   {id:"gov", title:"Government services", why:"Add each one you use. Each card shows how to let someone deal with it for you, and what your family will need to do.", reg:"govs",
+    tip:() => L().nz ? "When the time comes, the End of Life Service on govt.nz lists which agencies to tell." : "When the time comes, one Advice of death form to Services Australia updates Centrelink, Medicare and Child Support together.",
+    fields:[a("notes","Anything else someone should know?",{rows:3})]},
    {id:"keep", title:"Your phone number and email", why:"Your phone number and email are how your family will get into everything else. Security codes go to your phone, and password resets go to your email. Cancelling either too early can lock them out.",
     fields:[t("mobile","Mobile number and provider",{ph:"e.g. 0400 000 000 (Telstra)"}), t("email","Main email account",{ph:"The provider is enough, e.g. Gmail"}), r("phone_keeper","Who will keep the phone paid and charged?")]},
    {id:"vault", title:"The vault", why:"Card numbers, passwords and codes go here, and nowhere else. The vault is scrambled on this device with a passphrase only you know, before anything is saved. Nobody else can read it.", vault:true,
@@ -1292,7 +1413,8 @@ const activeChapters = () => { const f = F(); return CHAPTERS.filter(ch => !ch.w
 const stepsOf = ch => { const f = F(); return ch.steps.filter(st => !st.when || st.when(f)); };
 const stepFind = (cid, sid) => { const ch = chapterById(cid); const st = ch && ch.steps.find(s => s.id === sid); return [ch, st]; };
 function stepHas(ch, st){
-  if (st.reg) return S.reg[st.reg].length > 0;
+  if (st.reg && S.reg[st.reg].length) return true;
+  if (st.reg && !st.fields) return false;
   if (st.vault && ((S.vault && S.vault.count) || S.reg.pms.length)) return true;
   if (st.pros) return S.reg.people.some(p => (p.roles || []).includes("professional"));
   const f = F();
@@ -1775,6 +1897,9 @@ function suggestions(){
   const pmOpen = S.reg.pms.filter(x => x.access !== "yes");
   if (pmOpen.length) add("pmaccess", `Set up a way into ${andJoin(pmOpen.map(x => x.what || "your password manager"))}`, "Most password managers let you name someone who can ask for access if something happens to you. You stay in control, and you never hand over your master password. The steps for each one are on the vault page.", "", ["admin","vault"]);
   else if ((s.digital || []).includes("pm") && !S.reg.pms.length) add("pmaccess","Add your password manager","Say which password manager you use, then follow its steps to set up emergency access. You never hand over your master password.", "", ["admin","vault"]);
+  const govOpen = S.reg.govs.filter(x => { const g = govGuide(x); return (g.pays || g.care) && x.act !== "yes"; });
+  if (govOpen.length) add("govact", `Let someone deal with ${andJoin(govOpen.map(govName))} for you`, "If you’re in hospital or unwell, someone you trust can keep payments and letters going, and answer their questions. It takes a form or a phone call. The steps for each are on the Government services page.", "", ["admin","gov"]);
+  else if (f.gov && !S.reg.govs.length) add("govact","Add the government services you use","You get government payments. Add each service, and see how to let someone deal with it for you.", "", ["admin","gov"]);
   return out;
 }
 function sooner(){
@@ -2082,6 +2207,9 @@ function exampleState(){
   s.reg.digital = [{id:uid(), platform:"Apple ID", outcome:"Download then close", legacy:"no"}, {id:uid(), platform:"Main email", outcome:"Keep", legacy:"no"}];
   s.reg.pms = [{id:uid(), what:"Bitwarden", access:"yes", people:[{name:"Jo Morgan", pct:""}], account:"My Gmail address", kit:"Sealed envelope with the will, held by Priya Shah"},
     {id:uid(), what:"Apple Passwords", access:"no", people:[]}];
+  s.reg.govs = [{id:uid(), what:"myGov", login:"My Gmail address"},
+    {id:uid(), what:"Medicare", gets:"Family card, with Jo, Mia and Tom on it", ref:"4821", act:"no", where:"My wallet. Letters in the grey filing cabinet"},
+    {id:uid(), what:"ATO", gets:"Tax return each year", act:"no", notes:"I do my own tax return online, through myGov."}];
   s.reg.belongings = [{id:uid(), item:"Grandad’s watch", story:"Bought in Lae in 1962 with his first pay packet. He wore it every day until he gave it to me at my 21st.", forWhom:[{name:"Tom Morgan", pct:""}], where:"Bedside drawer"}];
   s.reg.letters = [{id:uid(), personId:mia.id, rel:"child", body:"Dear Mia,\n\nI keep thinking about the afternoon you finally rode without the trainer wheels, wobbling down Latrobe Terrace and yelling at me not to let go. I’d let go three houses earlier.\n\n", deliver:"release"},
                    {id:uid(), personId:tom.id, rel:"young", body:"", deliver:"occasion", occasion:"His 18th birthday"}];
@@ -2091,7 +2219,7 @@ function exampleState(){
     "home.trades.list":"Plumber: Dave at Inner North Plumbing, 0400 000 111. Electrician: Bright Spark, 0400 000 112. Mechanic: Ashgrove Auto.",
     "family.pets.needs":"Biscuit (kelpie cross, 9). Two cups of dry food morning and night, and an arthritis tablet with breakfast. Paddington Vet knows him.",
     "family.dependants.routines":"Tom needs his puffer at night. He has footy training Tuesdays and Thursdays.",
-    "admin.keep.mobile":"0400 000 100 (Telstra)", "admin.keep.email":"Gmail", "admin.gov.list":["mygov","medicare","ato"],
+    "admin.keep.mobile":"0400 000 100 (Telstra)", "admin.keep.email":"Gmail",
     "personal.health.meds":"Atorvastatin 20mg, at night\nRamipril 5mg, morning", "personal.health.allergies":"Penicillin", "personal.health.gp":"Dr Helen Lee, Paddington Family Practice",
     "personal.health.cards":"Wallet, and a copy in the grey filing cabinet", "personal.act.docs":"no",
     "personal.away.weekly":"Pay the mortgage top-up into the offset on the 1st. Take Mum shopping on Saturday mornings.",
@@ -2123,7 +2251,7 @@ const setB = (b, v) => { const [o,k] = ref(b); o[k] = v; };
 
 let store = {ref:null}, saveTimer = null, saving = Promise.resolve(), saveLabel = "";
 const LS = "amfy-plan-v2";
-function hydrate(o){ const b = blank(); return evenDefaults(movePms(movePoints(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []})))); }
+function hydrate(o){ const b = blank(); return evenDefaults(moveGovs(movePms(movePoints(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []}))))); }
 function loadLocal(){ try { const raw = localStorage.getItem(LS); if (raw) return hydrate(JSON.parse(raw)); } catch(e) {} return null; }
 function save(){
   clearTimeout(saveTimer); setSave("Saving…");
@@ -3440,6 +3568,8 @@ function familyTasks(sit){
     if (ans("personal.away.visits")) add("visits", "week", `Let people know who expect a visit or call from ${o}`, ans("personal.away.visits"), [vName]);
     if (S.reg.costs.length) add("bills", "week", "Keep the bills paid", `About ${money(costsTotal())} a month goes out automatically. Check the accounts they come from have enough in them.`, nmOf(att.length ? att : exec));
     if (ans("personal.act.docs") !== "yes" && S.scan.epoa !== "yes") add("epoa", "week", "Talk to the bank before anything urgent comes up", `Without a signed ${L().d.epoa}, nobody can legally manage ${o}’s money, even a partner. Joint accounts still work.`, nmOf(att));
+    S.reg.govs.filter(x => x.act === "yes" && filled(x.actFor)).forEach(x => add("gov-" + x.id, "week", `Deal with ${govName(x)} for ${o}`,
+      [`${whoText(x.actFor)} is set up to do this.`, x.gets, x.where && "Cards and letters: " + x.where].filter(Boolean).join("\n"), plist(x.actFor).map(p2 => firstName(p2.name)).filter(Boolean)));
     if (ans("admin.keep.mobile") || ans("admin.keep.email")) add("phone", "week", `Keep ${o}’s phone and email running`, [ans("admin.keep.mobile") && "Mobile: " + ans("admin.keep.mobile"), ans("admin.keep.email") && "Email: " + ans("admin.keep.email")].filter(Boolean).join("\n"), nmOf(holders("phone_keeper")));
   } else {
     add("cert", "today", "Get a medical certificate of death", "From the doctor or hospital. If the death was unexpected, the police and coroner may be involved first.", nmOf(exec));
@@ -3459,6 +3589,8 @@ function familyTasks(sit){
     S.reg.assets.filter(x => filled(x.intendedFor)).forEach(x => add("ast-" + x.id, "later", `${x.what || "The asset"}: to ${whoText(x.intendedFor)}`, [x.ownership, x.notes].filter(Boolean).join(" · "), nmOf(exec)));
     S.reg.pms.forEach(x => { const g = pmGuide(x), who = plist(x.people).map(p => firstName(p.name)).filter(Boolean);
       add("pm-" + x.id, "week", `Get into ${x.what || g.name}`, [g.family, x.account && "Account: " + x.account, x.kit && "Emergency kit or recovery code: " + x.kit].filter(Boolean).join("\n"), who.length ? who : nmOf(exec)); });
+    S.reg.govs.forEach(x => { const g = govGuide(x);
+      add("gov-" + x.id, "week", g.todo || `Tell ${govName(x)}`, [g.family, x.ref && "Their number ends in " + x.ref, x.where && "Cards and letters: " + x.where].filter(Boolean).join("\n"), nmOf(exec)); });
     S.reg.points.forEach(x => add("pts-" + x.id, "later", `${x.what || x.type || "Points or voucher"}: ${pointsTodo(x)}`, pointsDetail(x).join("\n"), nmOf(exec)));
     if (S.reg.costs.length) { const n = k => S.reg.costs.filter(x => x.outcome === k).length; add("bills", "later", "Sort out the bills", `${n("Cancel")} to cancel, ${n("Transfer")} to hand on, ${n("Keep")} to keep for now. The list is in the executor’s list.`, nmOf(exec)); }
     S.reg.belongings.forEach(x => add("bel-" + x.id, "later", `Give ${x.item || "the item"} to ${whoText(x.forWhom) || "the chosen person"}`, [x.story, x.notes].filter(Boolean).join("\n"), nmOf(exec)));
@@ -3473,9 +3605,9 @@ function planFacts(){
     (st.fields || []).forEach(fd => { if (fd.private || (fd.when && !fd.when(f))) return; const v = valText(ch, st, fd); if (v) push(`${ch.title} › ${fnv(st.title)}`, fnv(fd.label), v, `${ch.id}.${st.id}.${fd.k}`); });
   }));
   familyPeople().concat(S.reg.people.filter(p => (p.roles || []).includes("professional"))).forEach(p => push("Family › People", p.name, [p.rel, p.phone, (p.roles || []).filter(r => r !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · ")));
-  ["accounts","retire","policies","assets","points","debts","costs","docs","digital","pms","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
-    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", pms:"Admin › Password managers", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
-      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, rg === "pms" && x.account && "Account: " + x.account, rg === "pms" && x.kit && "Emergency kit or recovery code: " + x.kit, x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
+  ["accounts","retire","policies","assets","points","debts","costs","docs","digital","pms","govs","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
+    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", pms:"Admin › Password managers", govs:"Admin › Government services", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
+      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, rg === "pms" && x.account && "Account: " + x.account, rg === "pms" && x.kit && "Emergency kit or recovery code: " + x.kit, rg === "govs" && x.login && "Account: " + x.login, rg === "govs" && filled(x.agent) && "Tax agent: " + whoText(x.agent), x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
   Object.keys(WORDS).forEach(sec => WORDS[sec].items.forEach((it, i) => push("Letters and words › " + WORDS[sec].title, it.q, S.answers[wordsKey(sec, i)], wordsKey(sec, i))));
   return out;
 }
@@ -3893,7 +4025,7 @@ function executorDoc(){
     ...S.reg.policies.map(x => `Claim on the ${esc(x.type || "insurance")} policy${x.insurer ? " with " + esc(x.insurer) : ""}.${filled(x.beneficiary) ? " Beneficiaries: " + esc(whoText(x.beneficiary)) + "." : ""}${x.where ? " Policy document: " + esc(x.where) + "." : ""}`),
     ...S.reg.assets.filter(x => filled(x.intendedFor)).map(x => `${esc(x.what || "Asset")}${x.ownership ? " (" + esc(x.ownership) + ")" : ""}: meant for ${esc(whoText(x.intendedFor))}.`),
     f.employee ? `Contact the employer${ans("money.employer.name") ? " (" + esc(ans("money.employer.name")) + ")" : ""} about final pay, leave and group insurance.` : "",
-    ...(ans("admin.gov.list") || []).map(g => "Tell " + esc(optLabel("admin","gov","list",g)) + "."),
+    ...S.reg.govs.map(x => { const g = govGuide(x); return `${esc(x.what || g.name)}: ${esc(g.family)}${x.ref ? " Their number ends in " + esc(x.ref) + "." : ""}${x.where ? " Cards and letters: " + esc(x.where) + "." : ""}`; }),
     f.owns ? "Tell the home insurer. Cover can be limited if the house is empty for 60 to 90 days." : "",
     ...S.reg.debts.map(x => `Tell ${esc(x.lender || "the lender")} about the ${esc((x.type || "debt").toLowerCase())}.${x.insured === "yes" ? " It may be covered by insurance." : ""}`)];
   const group = o => S.reg.costs.filter(x => x.outcome === o);
