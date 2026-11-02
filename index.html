@@ -908,6 +908,47 @@ const FREQ = [["Weekly","Weekly"],["Fortnightly","Fortnightly"],["Monthly","Mont
 const FREQ_MULT = {Weekly:52/12, Fortnightly:26/12, Monthly:1, Quarterly:1/3, Yearly:1/12, "Ad hoc":0, Other:0};
 const perMonth = x => { const v = parseFloat(String(x.amount || "").replace(/[^0-9.]/g,"")) || 0, f = x.freq || "Monthly";
   return v * (f in FREQ_MULT ? FREQ_MULT[f] : 1); };
+// A bill's amount from the charges attached to it: the average cost per the chosen frequency.
+// The same charge on a schedule (a subscription): the average charge, converted to the chosen frequency.
+// Charges that vary (food delivery, tolls): their total spread over the months they cover, then converted.
+// "As needed" and "Other": the average charge. Returns null when there are no charges.
+const PERIOD_FREQ = ["Weekly","Fortnightly","Monthly","Quarterly","Yearly"];
+function costFromTx(txs, freq){
+  const s = (txs || []).filter(t2 => t2 && t2.d && isFinite(parseFloat(t2.a))).slice().sort((p, q2) => p.d < q2.d ? -1 : 1); if (!s.length) return null;
+  const amts = s.map(t2 => Math.abs(parseFloat(t2.a))), total = amts.reduce((x, y) => x + y, 0), mean = total / amts.length, f = freq || "Monthly";
+  if (!PERIOD_FREQ.includes(f) || s.length === 1) return mean;
+  const dts = s.map(t2 => Date.parse(t2.d)), gaps = dts.slice(1).map((x, i) => (x - dts[i]) / 864e5).filter(g => g > 3).sort((p, q2) => p - q2);
+  const sorted = amts.slice().sort((p, q2) => p - q2), med = sorted[Math.floor(sorted.length / 2)], gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0;
+  let monthly;
+  if (gap && amts.every(v => Math.abs(v - med) <= Math.max(2, med * .2))) {
+    const every = gap <= 10 ? "Weekly" : gap <= 20 ? "Fortnightly" : gap <= 45 ? "Monthly" : gap <= 120 ? "Quarterly" : "Yearly";
+    monthly = mean * FREQ_MULT[every];
+  } else monthly = total / Math.max(1, ((dts[dts.length - 1] - dts[0]) / 864e5 + 30) / 30.44);
+  return monthly / FREQ_MULT[f];
+}
+// With no charges attached, changing how often converts the amount: $640 quarterly is $213.33 monthly.
+function convertAmount(amount, from, to){
+  const v = parseFloat(String(amount || "").replace(/[^0-9.]/g, "")), a2 = from || "Monthly";
+  return isFinite(v) && v > 0 && PERIOD_FREQ.includes(a2) && PERIOD_FREQ.includes(to) ? v * FREQ_MULT[a2] / FREQ_MULT[to] : null;
+}
+// Under the amount: how it's worked out, or, for an amount typed by hand, a way back to the average of the charges.
+function amountHTML(b, x, txs, o){
+  const n = (txs || []).length, calc = n > 1 ? costFromTx(txs, x.freq) : null;
+  const own = x.amountOwn && calc != null && Math.abs(calc - (parseFloat(String(x.amount || "").replace(/[^0-9.]/g, "")) || 0)) >= 0.005;
+  const help = own ? `You typed this amount, so it stays when you change how often. The average of the ${n} charges is $${calc.toFixed(2)} ${freqText(x)}.`
+    : n > 1 ? `The average of the ${n} charges, per the frequency you pick. It updates when you remove a charge or change how often.` : "";
+  return inputHTML(b, t("amount","Amount ($)",Object.assign({num:true, noguard:true, help}, o || {})), x.amount == null ? "" : String(x.amount))
+    + (own ? `<button type="button" class="btn sm ghost" data-act="amtcalc" data-b="${esc(b)}">Use the average, $${calc.toFixed(2)}</button>` : "");
+}
+// Work the amount out again from the charges (or convert it, with none), unless it was typed by hand and only the
+// frequency changed. Returns true if it changed.
+function recalcAmount(x, txs, fromFreq){
+  if (fromFreq !== undefined && x.amountOwn && filled(x.amount)) return false;   // "$30" then "Yearly" means $30 a year
+  const v = (txs || []).length ? costFromTx(txs, x.freq) : fromFreq !== undefined ? convertAmount(x.amount, fromFreq, x.freq) : null;
+  if (v == null) return false;
+  const nv = v.toFixed(2), was = parseFloat(String(x.amount || "").replace(/[^0-9.]/g, ""));
+  x.amount = nv; x.amountOwn = false; return !(isFinite(was) && Math.abs(was - v) < 0.005);
+}
 const freqText = x => x.freq === "Ad hoc" ? "as needed" : x.freq === "Other" ? (x.freqOther || "irregular") : (x.freq || "Monthly").toLowerCase();
 const irregular = () => S.reg.costs.filter(x => x.freq === "Ad hoc" || x.freq === "Other");
 const money = n => "$" + n.toLocaleString("en-AU", {maximumFractionDigits:0});
@@ -2115,7 +2156,7 @@ function saveFound(){
     const ex = S.reg.costs.find(c2 => isBilledAs(c2, bl) && (!type || typeOf(c2) === type))
       || (type ? S.reg.costs.find(c2 => typeOf(c2) === type && (!c2.provider || lc(c2.provider) === lc(type))) : null);
     if (ex) { mergeInto(ex, Object.assign({}, x, {type, billers:bl})); if (type && typeOf(ex) !== type) setBillType(ex, type); merged++; }
-    else { S.reg.costs.push({id:uid(), provider:x.provider, type, billers:bl, category:type ? catOfType(type) : (a.cat || "Other"), amount:filled(x.amount) ? String(x.amount) : "", freq:x.freq || "Other", freqOther:x.freq ? (x.freq === "Other" ? x.freqOther || "" : "") : "Not sure yet", renews:x.renews || "", notes:x.note || "", seen:mergeTx([], x.txs)}); added++; } });
+    else { S.reg.costs.push({id:uid(), provider:x.provider, type, billers:bl, category:type ? catOfType(type) : (a.cat || "Other"), amount:filled(x.amount) ? String(x.amount) : "", amountOwn:!!x.amountOwn, freq:x.freq || "Other", freqOther:x.freq ? (x.freq === "Other" ? x.freqOther || "" : "") : "Not sure yet", renews:x.renews || "", notes:x.note || "", seen:mergeTx([], x.txs)}); added++; } });
   const folded = tidyBills(); added -= Math.min(added, folded); merged += folded;
   S.billSetup = S.billSetup || {done:true, types:JSON.parse(JSON.stringify(selectedTypes()))}; S.billSetup.done = true;
   return {added, merged};
@@ -2200,7 +2241,7 @@ function bqEditHTML(it){
   return `<div class="bqedit" id="bqe_${it.id}"><span class="eyebrow">Edit this bill</span>
     <div class="grid2">${inputHTML(b("provider"), t("provider","Name",{ph:"How your family will know it, e.g. Netflix", live:"bq", noguard:true}), it.provider)}
       ${inputHTML(b("desc"), t("desc","What it’s for",{ph:"e.g. Power for the house", live:"bq"}), it.desc)}
-      ${inputHTML(b("amount"), t("amount","Amount ($)",{ph:"e.g. 22.99", live:"bq", num:true, noguard:true}), it.amount)}
+      <div>${amountHTML(b("amount"), it, it.seen, {ph:"e.g. 22.99", live:"bq"})}</div>
       ${inputHTML(b("renews"), d("renews","Renews or ends on",{live:"bq"}), it.renews)}</div>
     ${inputHTML(b("freq"), c("freq","How often",FREQ), it.freq)}
     ${it.freq === "Other" ? inputHTML(b("freqOther"), t("freqOther","How often, in your words",{ph:"e.g. Every two years, each winter", live:"bq", noguard:true}), it.freqOther) : ""}
@@ -2290,7 +2331,7 @@ const foundAmt = x => { const n = parseFloat(String(x.amount == null ? "" : x.am
 function allocEditHTML(x, i){
   const fb = k => `fi|${i}|${k}`;
   return `<div class="bqedit"><div class="grid2">${inputHTML(fb("provider"), t("provider","Name",{ph:"How your family will know it", noguard:true}), x.provider)}
-      ${inputHTML(fb("amount"), t("amount","Amount ($)",{ph:"e.g. 22.99", num:true, noguard:true}), x.amount == null ? "" : String(x.amount))}</div>
+      <div>${amountHTML(fb("amount"), x, x.txs, {ph:"e.g. 22.99"})}</div>
     ${inputHTML(fb("freq"), c("freq","How often",FREQ), x.freq)}
     ${x.freq === "Other" ? inputHTML(fb("freqOther"), t("freqOther","How often, in your words",{ph:"e.g. Every two years", noguard:true}), x.freqOther) : ""}
     <div><button class="btn sm primary" data-act="aname" data-i="${i}">Done</button></div></div>`;
@@ -2476,7 +2517,7 @@ function billCardHTML(it){
       ${it.outcome === "Transfer" ? inputHTML(b("transferTo"), p("transferTo","Who to?",{one:true}), it.transferTo) : ""}
       ${inputHTML(b("paidFrom"), {k:"paidFrom", label:"Paid from", type:"acct"}, it.paidFrom)}</div>
     <div class="row between"><button class="btn sm ghost" data-act="bmore" data-id="${it.id}" aria-expanded="${more}">${more ? "▾ Fewer details" : "▸ Edit name, amount, how often, renewal and notes"}</button><button class="btn sm ghost" data-act="notbill" data-id="${it.id}">It’s not a bill</button></div>
-    ${more ? `<div class="grid2">${inputHTML(b("provider"), t("provider","Name",{ph:"How your family will know it", noguard:true}), it.provider)}${inputHTML(b("amount"), t("amount","Amount ($)",{live:"total", num:true, noguard:true}), it.amount)}
+    ${more ? `<div class="grid2">${inputHTML(b("provider"), t("provider","Name",{ph:"How your family will know it", noguard:true}), it.provider)}<div>${amountHTML(b("amount"), it, it.seen, {live:"total"})}</div>
       ${inputHTML(b("freq"), c("freq","How often",FREQ), it.freq)}${it.freq === "Other" ? inputHTML(b("freqOther"), t("freqOther","How often?"), it.freqOther) : ""}
       ${inputHTML(b("renews"), d("renews","Renews or ends on"), it.renews)}${inputHTML(b("notes"), a("notes","Notes",{rows:2}), it.notes)}</div><div class="row" style="justify-content:flex-end">${del}</div>` : ""}
   </div>`;
@@ -3903,10 +3944,15 @@ const ACT = {
   navtoggle(){ ui.navOpen = !ui.navOpen; rerender(); },
   pick(el){ const b = el.dataset.b, v = el.dataset.v;
     if (b.startsWith("status|")) { S.status[b.slice(7)] = v; save(); rerender(); return; }
-    const sticky = /^(set|rel)\|/.test(b);
-    setB(b, getB(b) === v && !sticky ? "" : v);
+    const sticky = /^(set|rel)\|/.test(b), before = getB(b);
+    setB(b, before === v && !sticky ? "" : v);
     if (b === "set|country" && v === "AU" && !S.settings.region) S.settings.region = "NSW";
-    touched(); save(); rerender(); },
+    // A bill's amount follows its frequency: the average of its charges per week, month or year.
+    const fm = b.match(/^r\|costs\|([^|]+)\|freq$/) || b.match(/^fi\|(\d+)\|freq$/);
+    let msg = "";
+    if (fm && getB(b)) { const found = b.startsWith("fi|"), x = found ? (ui.find.items || [])[+fm[1]] : S.reg.costs.find(c2 => c2.id === fm[1]), txs = x && (found ? x.txs : x.seen) || [];
+      if (x && recalcAmount(x, txs, before || "Monthly")) msg = `${x.provider || x.orig || billName(x)}: $${x.amount} ${freqText(x)}${txs.length > 1 ? ", the average of " + txs.length + " charges" : ""}`; }
+    touched(); save(); rerender(); if (msg) toast(msg); },
   toggle(el){ const b = el.dataset.b, v = el.dataset.v, excl = ["none","no"]; let cur = Array.isArray(getB(b)) ? getB(b).slice() : [];
     if (cur.includes(v)) cur = cur.filter(x => x !== v); else cur = excl.includes(v) ? [v] : cur.filter(x => !excl.includes(x)).concat(v);
     setB(b, cur); touched(); save(); rerender(); },
@@ -3963,7 +4009,7 @@ const ACT = {
   fadd(){ let n = 0, matched = 0;
     const items = ui.find.items, isChild = x => String(x.matchId || "").startsWith("f:");
     const newCost = (x, type) => { type = type || suggestTypes(x.provider).find(t2 => lc(t2) === lc(x.provider)) || "";
-      const it = {id:uid(), provider:x.provider, type, billers:x.provider ? [x.provider] : [], category:type ? catOfType(type) : x.category, amount:x.amount != null ? String(x.amount) : "", freq:x.freq || "Other", freqOther:x.freq ? "" : "Not sure yet", renews:x.renews || "", notes:[x.last4 ? "Account ••" + x.last4 : "", x.note || ""].filter(Boolean).join(". "), seen:x.txs || []}; S.reg.costs.push(it); return it; };
+      const it = {id:uid(), provider:x.provider, type, billers:x.provider ? [x.provider] : [], category:type ? catOfType(type) : x.category, amount:x.amount != null ? String(x.amount) : "", amountOwn:!!x.amountOwn, freq:x.freq || "Other", freqOther:x.freq ? "" : "Not sure yet", renews:x.renews || "", notes:[x.last4 ? "Account ••" + x.last4 : "", x.note || ""].filter(Boolean).join(". "), seen:x.txs || []}; S.reg.costs.push(it); return it; };
     // Pass 1: everything filed under an existing bill, or as a new group of its own.
     items.filter(x => x.pick && !isChild(x)).forEach(x => { n++; x._id = null;
       if (x.kind === "debt") { if (!S.reg.debts.some(d2 => d2.lender === x.provider)) S.reg.debts.push({id:uid(), lender:x.provider, type:"Buy now pay later", notes:x.note || "", seen:x.txs || []}); else n--; }
@@ -4130,9 +4176,16 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
   rsattach(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id), r2 = ui.research; if (!it || !r2) return;
     const add = TXPOOL.filter(t2 => r2.picked.has(txKey(t2))); const before = (it.seen || []).length;
     S.reg.costs.forEach(c2 => { if (c2 !== it && c2.seen) c2.seen = c2.seen.filter(t2 => !r2.picked.has(txKey(t2))); });   // a transaction belongs to one bill
-    it.seen = mergeTx(it.seen, add); inferFromSeen(it); ui.research = null; ui.txOpen.add(it.id); touched(); save(); rerender();
+    it.seen = mergeTx(it.seen, add); inferFromSeen(it); recalcAmount(it, it.seen); ui.research = null; ui.txOpen.add(it.id); touched(); save(); rerender();
     toast(`${it.seen.length - before} transaction${it.seen.length - before === 1 ? "" : "s"} attached to ${billName(it)}`); },
-  rmtx(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id); if (!it) return; it.seen = (it.seen || []).filter(t2 => txKey(t2) !== el.dataset.k); save(); rerender(); },
+  // Back from an amount typed by hand to the average of the charges.
+  amtcalc(el){ const b = el.dataset.b, m2 = b.match(/^fi\|(\d+)\|/), x = m2 ? (ui.find.items || [])[+m2[1]] : S.reg.costs.find(c2 => c2.id === b.split("|")[2]); if (!x) return;
+    x.amountOwn = false; recalcAmount(x, m2 ? x.txs : x.seen); touched(); save(); rerender(); },
+  // Removing a charge works the amount out again from the charges left.
+  rmtx(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id); if (!it) return; it.seen = (it.seen || []).filter(t2 => txKey(t2) !== el.dataset.k);
+    const ch = recalcAmount(it, it.seen); touched(); save(); rerender();
+    if (!it.seen.length) toast(`${billName(it)}: no charges left, so the amount stays${filled(it.amount) ? " at $" + it.amount : ""}`);
+    else if (ch) toast(`${billName(it)}: now $${it.amount} ${freqText(it)}, from ${it.seen.length} charge${it.seen.length === 1 ? "" : "s"}`); },
   bfile(el){ const id = el.dataset.id; ui.bFile.has(id) ? ui.bFile.delete(id) : ui.bFile.add(id); delete ui.bCat[id]; rerender(); },
   bsub(el){ const it = S.reg.costs.find(x => x.id === el.dataset.id); if (!it) return; setBillType(it, el.dataset.t); selectType(el.dataset.t, true); ui.bFile.delete(it.id); delete ui.bCat[it.id]; save(); rerender(); toast(`Filed under ${catOfType(el.dataset.t)} › ${el.dataset.t}`); },
   bmoretypes(el){ ui.moreTypes.add("b:" + el.dataset.id); rerender(); },
@@ -4213,6 +4266,7 @@ document.addEventListener("input", e => {
   if (el.dataset.digits) { const nv = v.replace(/\D/g, "").slice(0, 4); if (nv !== v) { el.value = nv; v = nv; } }
   if (el.dataset.bsb) { const dg = v.replace(/\D/g, "").slice(0, 6), nv = dg.length > 3 ? dg.slice(0, 3) + "-" + dg.slice(3) : dg; if (nv !== v) { el.value = nv; v = nv; } }
   setB(b, v);
+  if (/^(r\|costs\|[^|]+|fi\|\d+)\|amount$/.test(b)) setB(b.replace(/amount$/, "amountOwn"), filled(v));   // typed by hand, so it stays when the frequency changes
   if (el.dataset.assist) { const box = document.getElementById("as_" + el.id); if (box) box.innerHTML = assistHTML(v, el.id, el.dataset.assist === "s"); }
   if (el.dataset.coach) { const box = document.getElementById("co_" + el.id); if (box) box.innerHTML = coachHTML(v, el.dataset.coach); }
   if (el.dataset.live === "rq" && ui.research) { ui.research.q = v; refreshResearch(); return; }
@@ -4274,7 +4328,7 @@ document.addEventListener("keydown", e => {
 });
 
 /* ================= boot ================= */
-window.__amfy = {parseStatement, parseStatements, plan:() => S, samePerson};   // for the automated tests
+window.__amfy = {parseStatement, parseStatements, plan:() => S, samePerson, costFromTx, convertAmount};   // for the automated tests
 loadPool();
 const local = loadLocal();
 if (local) { S = local; try { tidyBills(); if (tidyBills.changed) save(); } catch(e) {} if (S.started) { ui.view = S.scanDone ? "today" : "scan"; } }
