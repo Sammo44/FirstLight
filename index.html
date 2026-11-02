@@ -680,6 +680,24 @@ function plist(v){
 }
 const pctOf = x => { const n = parseFloat(String(x.pct == null ? "" : x.pct).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : null; };
 const pctTxt = n => String(+n.toFixed(2));
+// The fields where each person gets a share: [register, field, Strengthen step].
+const SPLITS = [["retire","nominee","retire"],["policies","beneficiary","insurance"],["assets","intendedFor","assets"]];
+// Shares split evenly by default: one person gets 100%, two get 50% each, three get 33.33, 33.33 and 33.34.
+function evenSplit(l){ const n = l.length, each = Math.floor(10000 / n) / 100; l.forEach((x, i) => { x.pct = pctTxt(i === n - 1 ? 100 - each * (n - 1) : each); }); return l; }
+// True when the shares are blank or still an even split, so they can be split again when someone is added or removed.
+function isEven(l){ const ns = l.map(pctOf); if (ns.every(v => v == null)) return true; if (ns.some(v => v == null)) return false;
+  return Math.abs(ns.reduce((s, v) => s + v, 0) - 100) < 0.01 && ns.every(v => Math.abs(v - 100 / l.length) < 0.7); }
+// After someone is added or removed: split evenly again, unless the shares were set by hand.
+// Set by hand, the new person gets whatever is left. One person on their own always gets 100%.
+function reshare(l, wasEven, added){
+  if (l.length === 1) { l[0].pct = "100"; return l; }
+  if (wasEven) return evenSplit(l);
+  if (added) { const left = 100 - l.filter(x => x !== added).reduce((s, x) => s + (pctOf(x) || 0), 0); if (left > 0.005) added.pct = pctTxt(left); }
+  return l;
+}
+// Plans saved before shares were split by default: people with no shares at all get an even split.
+function evenDefaults(s){ SPLITS.forEach(([rg, k]) => (Array.isArray(s.reg[rg]) ? s.reg[rg] : []).forEach(x => { const l = plist(x[k]);
+  if (l.length && l.every(y => pctOf(y) == null)) x[k] = evenSplit(l); })); return s; }
 const andJoin = xs => xs.length < 2 ? (xs[0] || "") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
 // "Jo Morgan 60%, Mia 20% and Tom 20%". A share is only shown when there's more than one person.
 function whoText(v){ const l = plist(v); return andJoin(l.map(x => x.name + (l.length > 1 && pctOf(x) != null ? " " + pctTxt(pctOf(x)) + "%" : ""))); }
@@ -700,14 +718,17 @@ function ptotalHTML(l, b){
   if (!ns.some(v => v != null)) return `<span class="small muted">Add each person’s share, or split it equally.</span>${eq}`;
   const blank = l.filter((x, i) => ns[i] == null).map(x => x.name);
   if (blank.length) return `<span class="small pwarn">${esc(andJoin(blank))} ${blank.length === 1 ? "doesn’t" : "don’t"} have a share yet.${Math.abs(tot - 100) < 0.01 ? "" : " The others add up to " + pctTxt(tot) + "%."}</span>${eq}`;
-  if (Math.abs(tot - 100) < 0.01) return `<span class="small pok">✓ The shares add up to 100%</span>`;
+  if (Math.abs(tot - 100) < 0.01) return isEven(l) ? `<span class="small pok">✓ Split equally. Type over a share to change it.</span>` : `<span class="small pok">✓ The shares add up to 100%</span>${eq}`;
   return `<span class="small pwarn">The shares add up to ${pctTxt(tot)}%. ${tot < 100 ? pctTxt(100 - tot) + "% still to give." : "That’s " + pctTxt(tot - 100) + "% too much."}</span>${eq}`;
 }
+function addPerson(b, name, split){ const l = plist(getB(b)); if (l.some(x => samePerson(x.name, name))) return;
+  const was = isEven(l), nx = {name, pct:""}; l.push(nx); if (split) reshare(l, was, nx); setB(b, l); }
 const bid = b => String(b).replace(/[^a-zA-Z0-9]/g, "_");
 function peopleHTML(b, f, val){
   const id = "pf" + (++fidN), help = f.help ? `<p class="help">${esc(fnv(f.help))}</p>` : "";
   const known = knownNames(f.pros), names2 = known.concat((f.extra ? fnv(f.extra) : []).filter(n => !known.some(k2 => samePerson(k2, n))));
-  const addRow = `<div class="role-add pf-add"><input type="text" id="${id}" placeholder="${names2.length ? "Or someone else" : "Their name"}" aria-label="Someone else’s name"><button type="button" class="btn sm" data-act="pnew" data-b="${esc(b)}" data-inp="${id}"${f.one ? ` data-one="1"` : ""}>Add</button></div>`;
+  const sp = f.split ? ` data-split="1"` : "";
+  const addRow = `<div class="role-add pf-add"><input type="text" id="${id}" placeholder="${names2.length ? "Or someone else" : "Their name"}" aria-label="Someone else’s name"><button type="button" class="btn sm" data-act="pnew" data-b="${esc(b)}" data-inp="${id}"${f.one ? ` data-one="1"` : ""}${sp}>Add</button></div>`;
   if (f.one) {
     const cur = String(Array.isArray(val) ? whoText(val) : val || "").trim(), opts = names2.slice();
     if (cur && !opts.some(n => samePerson(n, cur))) opts.unshift(cur);
@@ -716,11 +737,11 @@ function peopleHTML(b, f, val){
     return `<div class="field pf"><span class="label">${esc(fnv(f.label))}</span>${help}${chips ? `<div class="chips" role="group">${chips}</div>` : ""}${addRow}</div>`;
   }
   const l = plist(val), rest = names2.filter(n => !l.some(x => samePerson(x.name, n)));
-  const rows = l.map((x, i) => `<div class="prow"><span class="pname">${esc(x.name)}</span>${f.split ? `<span class="ppct"><input type="text" inputmode="decimal" maxlength="6" data-pct="${esc(b)}" data-i="${i}" value="${esc(x.pct)}" placeholder="${l.length === 1 ? "100" : "0"}" aria-label="${esc(x.name)}’s share, as a percentage"><span aria-hidden="true">%</span></span>` : ""}<button type="button" class="px" data-act="prm" data-b="${esc(b)}" data-i="${i}" aria-label="Remove ${esc(x.name)}">×</button></div>`).join("");
+  const rows = l.map((x, i) => `<div class="prow"><span class="pname">${esc(x.name)}</span>${f.split ? `<span class="ppct"><input type="text" inputmode="decimal" maxlength="6" data-pct="${esc(b)}" data-i="${i}" value="${esc(x.pct)}" placeholder="${l.length === 1 ? "100" : "0"}" aria-label="${esc(x.name)}’s share, as a percentage"><span aria-hidden="true">%</span></span>` : ""}<button type="button" class="px" data-act="prm" data-b="${esc(b)}" data-i="${i}"${sp} aria-label="Remove ${esc(x.name)}">×</button></div>`).join("");
   return `<div class="field pf"><span class="label">${esc(fnv(f.label))}</span>${help}
     ${l.length ? `<div class="prows">${rows}</div>` : ""}
     ${f.split && l.length > 1 ? `<div class="ptotal" id="pt_${bid(b)}">${ptotalHTML(l, b)}</div>` : ""}
-    ${rest.length ? `<div class="chips" role="group" aria-label="Add from your people">${rest.map(n => `<button type="button" class="chip add" data-act="padd" data-b="${esc(b)}" data-v="${esc(n)}">+ ${esc(n)}</button>`).join("")}</div>` : ""}
+    ${rest.length ? `<div class="chips" role="group" aria-label="Add from your people">${rest.map(n => `<button type="button" class="chip add" data-act="padd" data-b="${esc(b)}" data-v="${esc(n)}"${sp}>+${esc(n)}</button>`).join("")}</div>` : ""}
     ${addRow}</div>`;
 }
 
@@ -1536,7 +1557,7 @@ function suggestions(){
   }
   if (f.retire && l.nz) add("kiwisaver","KiwiSaver follows the will","KiwiSaver can’t be nominated to a person. It’s paid to the estate, so the will decides who receives it.", "Ask a lawyer: does my will deal with KiwiSaver the way I want?");
   // Shares that don't add up: blanks, or a total other than 100%.
-  [["retire","nominee","retire"],["policies","beneficiary","insurance"],["assets","intendedFor","assets"]].forEach(([rg, k, st]) => {
+  SPLITS.forEach(([rg, k, st]) => {
     const x = S.reg[rg].find(y => { const pl = plist(y[k]), ns = pl.map(pctOf); return pl.length > 1 && (ns.some(v => v == null) || Math.abs(ns.reduce((s2, v) => s2 + v, 0) - 100) > 0.01); });
     if (x) add("shares-" + rg, "Check the shares add up to 100%", `The shares for ${REG[rg].title(x) || "one " + REG[rg].noun} don’t add up to 100% yet. Your family will want to know exactly who gets what.`, "", ["money", st]); });
   if (S.reg.policies.some(p => p.heldVia === "Myself" && !filled(p.beneficiary))) add("benef","Name beneficiaries on your insurance","A policy without a nominated beneficiary is paid to the estate, which can mean waiting for probate.", "Ask your insurer: can I nominate a beneficiary?", ["money","insurance"]);
@@ -1898,7 +1919,7 @@ const setB = (b, v) => { const [o,k] = ref(b); o[k] = v; };
 
 let store = {ref:null}, saveTimer = null, saving = Promise.resolve(), saveLabel = "";
 const LS = "amfy-plan-v2";
-function hydrate(o){ const b = blank(); return Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []}); }
+function hydrate(o){ const b = blank(); return evenDefaults(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []})); }
 function loadLocal(){ try { const raw = localStorage.getItem(LS); if (raw) return hydrate(JSON.parse(raw)); } catch(e) {} return null; }
 function save(){
   clearTimeout(saveTimer); setSave("Saving…");
@@ -3851,13 +3872,12 @@ const ACT = {
   newrole(el){ const inp = document.getElementById(el.dataset.inp); const name = inp && inp.value.trim(); if (!name) { if (inp) inp.focus(); return; }
     S.reg.people.push({id:uid(), name, rel:"", roles:[el.dataset.role]}); touched(); save(); rerender(); toast(name + " added to your people"); },
   // People fields: add from your people, add someone new, remove, choose one, split equally.
-  padd(el){ const b = el.dataset.b, l = plist(getB(b)); if (!l.some(x => samePerson(x.name, el.dataset.v))) l.push({name:el.dataset.v, pct:""}); setB(b, l); touched(); save(); rerender(); },
+  // In a share field (data-split), adding or removing someone splits the shares evenly again, unless they were set by hand.
+  padd(el){ addPerson(el.dataset.b, el.dataset.v, el.dataset.split); touched(); save(); rerender(); },
   pnew(el){ const inp = document.getElementById(el.dataset.inp), name = inp && inp.value.trim(); if (!name) { if (inp) inp.focus(); return; }
-    const b = el.dataset.b;
-    if (el.dataset.one) setB(b, name);
-    else { const l = plist(getB(b)); if (!l.some(x => samePerson(x.name, name))) l.push({name, pct:""}); setB(b, l); }
+    if (el.dataset.one) setB(el.dataset.b, name); else addPerson(el.dataset.b, name, el.dataset.split);
     touched(); save(); rerender(); },
-  prm(el){ const b = el.dataset.b, l = plist(getB(b)); l.splice(+el.dataset.i, 1); setB(b, l); touched(); save(); rerender(); },
+  prm(el){ const b = el.dataset.b, l = plist(getB(b)), was = isEven(l); l.splice(+el.dataset.i, 1); if (el.dataset.split && l.length) reshare(l, was); setB(b, l); touched(); save(); rerender(); },
   pone(el){ const b = el.dataset.b, v = el.dataset.v; setB(b, samePerson(getB(b), v) ? "" : v); touched(); save(); rerender(); },
   roleadd(el){ const p = S.reg.people.find(x => x.id === el.dataset.pid); if (p && !(p.roles || []).includes(el.dataset.role)) { p.roles = (p.roles || []).concat(el.dataset.role); touched(); save(); rerender(); } },
   moreopts(el){ ui.allOpts.add(el.dataset.b); rerender(); },
@@ -3871,8 +3891,7 @@ const ACT = {
   qbillnew(el){ const inp = document.getElementById(el.dataset.inp), n = inp && inp.value.trim(); if (!n) { if (inp) inp.focus(); return; }
     if (!S.reg.costs.some(x => lc(x.provider) === lc(n))) S.reg.costs.push({id:uid(), provider:n, billers:[n], category:"Other", amount:"", freq:"Monthly"});
     touched(); save(); rerender(); toast(n + " added"); },
-  peq(el){ const b = el.dataset.b, l = plist(getB(b)), n = l.length; if (!n) return;
-    const each = Math.floor(10000 / n) / 100; l.forEach((x, i) => { x.pct = pctTxt(i === n - 1 ? 100 - each * (n - 1) : each); }); setB(b, l); touched(); save(); rerender(); },
+  peq(el){ const b = el.dataset.b, l = plist(getB(b)); if (!l.length) return; setB(b, evenSplit(l)); touched(); save(); rerender(); },
   fu(el){ const k = el.dataset.k, x = el.dataset.x, y = el.dataset.y;
     if (k === "add") { let p = {}; try { p = JSON.parse(y); } catch(e) {} const it = Object.assign({id:uid()}, p); if (x === "people" && !it.roles) it.roles = []; S.reg[x].push(it); save(); toast("Added. You can fill in the details later."); rerender(); }
     if (k === "goto") { const ch = chapterById(x); const i = ch ? stepsOf(ch).findIndex(s => s.id === y) : -1; if (i < 0) { toast("That isn’t in this plan yet. Redo the Life Scan to add it."); return; } go("chapter", {chapter:x, step:i}); }

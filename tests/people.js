@@ -32,14 +32,15 @@ click(q('.entry.open [data-act=peq]'));await wait(30);
 // After an exact 100, there is no split-equally button; force it via an uneven edit first.
 setv(q('.entry.open .ppct input[data-i="1"]'),'1');await wait(10);click(q('.entry.open [data-act=peq]'));await wait(30);
 check('split equally gives 25 each',rows().every(x=>/ 25%$/.test(x)),rows().join(', '));
-// Someone new, typed.
+check('an even split says so',/Split equally\. Type over a share/.test(total())&&!q('.entry.open [data-act=peq]'),total());
+// Someone new, typed: an even split stays even.
 setv(q('.entry.open .pf-add input'),'Aunty Bev');click(q('.entry.open [data-act=pnew]'));await wait(30);
-click(q('.entry.open [data-act=peq]'));await wait(30);
-check('typed name added and split five ways',rows().length===5&&/Aunty Bev 20%/.test(rows().join(', ')),rows().join(', '));
-// Remove one.
+check('typed name added and split five ways by itself',rows().join(', ')==='Jo Morgan 20%, Mia Morgan 20%, Tom Morgan 20%, Sam Morgan 20%, Aunty Bev 20%',rows().join(', '));
+// Remove one: still even.
 click(all('.entry.open [data-act=prm]').pop());await wait(30);
-check('remove takes the last one off',rows().length===4&&!/Bev/.test(rows().join(',')),rows().join(', '));
-check('total warns after removing',/80%/.test(total())&&/20% still to give/.test(total()),total());
+check('remove takes the last one off and splits again',rows().join(', ')==='Jo Morgan 25%, Mia Morgan 25%, Tom Morgan 25%, Sam Morgan 25%',rows().join(', '));
+for(let i=0;i<4;i++){setv(q(`.entry.open .ppct input[data-i="${i}"]`),'20');await wait(10);}
+check('total warns when shares are typed short',/80%/.test(total())&&/20% still to give/.test(total()),total());
 
 // Strengthen flags shares that don't add up.
 let sb=document.createElement('button');sb.dataset.act='go';sb.dataset.v='strengthen';document.body.appendChild(sb);click(sb);sb.remove();await wait(40);
@@ -49,19 +50,35 @@ check('strengthen flags the 80% split',/Check the shares add up to 100%/.test(do
 await go('money','accounts');await go('money','retire');await openEntry('AustralianSuper');
 check('shares are kept after leaving the page',rows().join(', ')==='Jo Morgan 20%, Mia Morgan 20%, Tom Morgan 20%, Sam Morgan 20%',rows().join(', '));
 
-// Insurance: add a policy and two beneficiaries.
+// Insurance: shares split evenly by default as people are added and removed.
 await go('money','insurance');
 click(all('[data-act=add][data-reg=policies]').pop());await wait(30);
-click(all('.entry.open .pf .chip.add').find(b=>/Jo Morgan/.test(b.textContent)));await wait(30);
-click(all('.entry.open .pf .chip.add').find(b=>/My estate/.test(b.textContent)));await wait(30);
-check('insurance takes two beneficiaries',rows().length===2,rows().join(', '));
-click(q('.entry.open [data-act=peq]'));await wait(30);
-check('insurance split 50/50',rows().join(', ')==='Jo Morgan 50%, My estate 50%',rows().join(', '));
+const addChip=async re=>{click(all('.entry.open .pf .chip.add').find(b=>re.test(b.textContent)));await wait(30);};
+await addChip(/Jo Morgan/);
+check('one beneficiary gets 100%',rows().join(', ')==='Jo Morgan 100%',rows().join(', '));
+await addChip(/My estate/);
+check('two beneficiaries get 50% each, without pressing anything',rows().join(', ')==='Jo Morgan 50%, My estate 50%',rows().join(', '));
+await addChip(/Mia Morgan/);
+check('three beneficiaries get a third each, adding to 100',rows().join(', ')==='Jo Morgan 33.33%, My estate 33.33%, Mia Morgan 33.34%'&&/Split equally/.test(total()),rows().join(', ')+' | '+total());
+click(all('.entry.open [data-act=prm]').pop());await wait(30);
+check('removing one goes back to 50/50',rows().join(', ')==='Jo Morgan 50%, My estate 50%',rows().join(', '));
 
-// Assets: shares.
+// Assets: shares typed by hand are kept. Someone new gets what's left, and one person on their own gets 100%.
 await go('money','assets');
 click(all('[data-act=add][data-reg=assets]').pop());await wait(30);
 check('assets has a people field with shares',!!q('.entry.open .pf')&&all('.entry.open .pf .chip.add').length>0,all('.entry.open .pf .chip.add').length+' choices');
+await addChip(/Jo Morgan/);
+setv(q('.entry.open .ppct input[data-i="0"]'),'60');await wait(10);
+await addChip(/Mia Morgan/);
+check('after a typed 60%, the next person gets the other 40%',rows().join(', ')==='Jo Morgan 60%, Mia Morgan 40%',rows().join(', '));
+await addChip(/Tom Morgan/);
+check('typed shares are kept when someone else is added',rows().join(', ')==='Jo Morgan 60%, Mia Morgan 40%, Tom Morgan %'&&/Tom Morgan doesn’t have a share yet/.test(total())&&!!q('.entry.open [data-act=peq]'),rows().join(', ')+' | '+total());
+click(all('.entry.open [data-act=prm]').pop());await wait(30);
+check('typed shares are kept when someone is removed',rows().join(', ')==='Jo Morgan 60%, Mia Morgan 40%',rows().join(', '));
+click(all('.entry.open [data-act=prm]').pop());await wait(30);
+check('one person left gets 100%',rows().join(', ')==='Jo Morgan 100%',rows().join(', '));
+click(all('.entry.open [data-act=prm]').pop());await wait(30);
+check('removing the last person leaves no rows',rows().length===0,rows().join(', '));
 
 // Joint account: several names, no shares.
 await go('money','accounts');await openEntry('ING');

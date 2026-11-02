@@ -28,7 +28,7 @@ Open `index.html` in a browser, or visit **https://sammo44.github.io/FirstLight/
 ## Main features
 
 - **Three places:** Today, My plan and For my family. On phones they sit in a labelled row at the top, next to a Menu button.
-- **People, picked not typed:** beneficiaries, joint owners, heirlooms and hand-overs are chosen from the people already in the plan (or someone new). Super, insurance and assets take several beneficiaries, each with a share, and the plan checks the shares add up to 100%.
+- **People, picked not typed:** beneficiaries, joint owners, heirlooms and hand-overs are chosen from the people already in the plan (or someone new). Super, insurance and assets take several beneficiaries, each with a share, and the plan checks the shares add up to 100%. Shares split evenly by default (one person gets 100%, two get 50% each, three get a third each) and stay even as people are added or removed. Once a share is typed by hand, the typed shares are kept and someone new gets whatever is left.
 - **A quick start:** three setup questions and a two-page Life Scan. The other questions are optional, under *Tailor your plan* in My plan. The 2-minute check's gaps decide which essentials come first.
 - **One measure of readiness:** ten things written down (five for hospital, five if you die), the same on the check, Today, My plan and the essentials.
 - **Today:** readiness written as outcomes ("If you were in hospital tonight, Jo could…"), one next step, and a *Tell me anything* box. On wide screens, readiness sits on the left and the next step on the right.
