@@ -577,6 +577,7 @@ table.txt td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 
 .vault{border:1px solid var(--dusk-ink);background:var(--dusk);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px}
 .vault .entry{background:var(--raised)}
+.vdocs .vdoc{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--raised);gap:10px}
 .vault input[type=password],.vault input[type=text],.vault textarea{background:var(--raised)}
 textarea.masked{-webkit-text-security:disc}
 .banner{background:var(--lamp-soft);color:var(--lamp-ink);padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:.9rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -1232,9 +1233,9 @@ const REG = {
       {k:"paidFrom", label:"Paid from", type:"acct"}, d("renews","Renews or ends on (if known)"),
       c("outcome","What should happen to it?",[["Cancel","Cancel"],["Keep","Keep"],["Transfer","Transfer to someone"],["Decide","Let them decide"]]),
       p("transferTo","Transfer to",{one:true, show:x => x.outcome === "Transfer"}), a("notes","Notes",{rows:2})]},
-  docs:{noun:"document", title:x => x.type, sub:x => [x.location, x.date && "dated " + x.date].filter(Boolean).join(" · "),
+  docs:{noun:"document", title:x => x.type, sub:x => [x.location, filled(x.digital) && (x.vault ? "digital copy, login in the vault" : "digital copy"), x.date && "dated " + x.date].filter(Boolean).join(" · "),
     presets:() => { const l = L(); return ["Will", l.d.epoa, l.d.health, l.d.acd, l.nz ? "KiwiSaver statements" : "Super nomination", "Life insurance policy","Property title / mortgage papers","Trust deed","Birth certificate","Marriage certificate","Divorce or separation papers","Passport","Tax records","Vehicle papers","Funeral plan or bond", l.nz ? "Contracting out agreement" : "Binding financial agreement"].map(n => ({label:n, data:{type:n}})); },
-    fields:() => [t("type","Document"), t("location","Where is the original?",{smart:true, ph:"e.g. Held by Shah Legal, or the blue folder in the study"}), t("digital","Is there a digital copy? Where?"),
+    fields:() => [t("type","Document"), t("location","Where is the original?",{smart:true, ph:"e.g. Held by Shah Legal, or the blue folder in the study"}), t("digital","Is there a digital copy? Where?",{live:"vdoc", ph:"e.g. Google Drive, Dropbox, or my lawyer’s client portal"}), {k:"vaultdoc", label:"Login for the digital copy", type:"vaultdoc"},
       p("holder","Who holds it (if not you)?",{one:true, pros:true}), d("date","Date signed or last updated"), a("notes","Notes",{rows:2})]},
   devices:{noun:"device", title:x => x.what, sub:x => [x.where, x.outcome === "Give" && filled(x.giveTo) ? "give to " + x.giveTo : x.outcome, filled(x.unlock) && "unlock: " + whoText(x.unlock)].filter(Boolean).join(" · "),
     presets:() => ["Phone","Laptop","Tablet","Desktop computer","Smartwatch","Hardware crypto wallet","Smart home hub","External hard drive"].map(n => ({label:n, data:{what:n}})),
@@ -2197,7 +2198,7 @@ function exampleState(){
     {id:uid(), provider:"RACQ", billers:["RACQ"], category:"Memberships", amount:"109", freq:"Yearly", outcome:"Decide", renews:"2026-03-14"},
     {id:uid(), provider:"Suncorp", type:"Car insurance", billers:["Suncorp"], category:"Vehicles", amount:"96", freq:"Monthly", paidFrom:cba.id, outcome:"Transfer", transferTo:"Jo", renews:"2027-02-01"}];
   s.billSetup = {done:true, types:{"Home":["Electricity","Water","Council rates","Internet"], "Phone & TV":["Mobile plan","Netflix","Spotify"], "Health & fitness":["Gym","Private health insurance"], "Memberships":["Roadside assistance"], "Vehicles":["Car registration","Car insurance"]}};
-  s.reg.docs = [{id:uid(), type:"Will", location:"Original held by Priya Shah, Shah Legal", date:"2014-05-02"}, {id:uid(), type:"Property title / mortgage papers", location:"Grey filing cabinet in the study, top drawer"}];
+  s.reg.docs = [{id:uid(), type:"Will", location:"Original held by Priya Shah, Shah Legal", digital:"Scanned copy in Google Drive, Family folder", date:"2014-05-02"}, {id:uid(), type:"Property title / mortgage papers", location:"Grey filing cabinet in the study, top drawer"}];
   s.reg.digital = [{id:uid(), platform:"Apple ID", outcome:"Download then close", legacy:"no"}, {id:uid(), platform:"Main email", outcome:"Keep", legacy:"no"}];
   s.reg.pms = [{id:uid(), what:"Bitwarden", access:"yes", people:[{name:"Jo Morgan", pct:""}], account:"My Gmail address", kit:"Sealed envelope with the will, held by Priya Shah"},
     {id:uid(), what:"Apple Passwords", access:"no", people:[]}];
@@ -2313,6 +2314,7 @@ function inputHTML(b, f, val){
       return `<div class="field"><span class="label">${esc(lab)}</span>${help}${chipsHTML(b, opts, val, true).replace(/<\/div>$/, more + "</div>")}</div>`; }
     case "btype": { const rid = b.split("|")[2], it = S.reg.costs.find(x => x.id === rid), cur = it ? typeOf(it) : (val || "");
       return `<div class="field"><label for="${id}">${esc(lab)}</label><select id="${id}" data-bsel="${esc(b)}">${typeOptionsHTML(cur)}</select><p class="help">Not listed? Add your own type in its category below the list of bills.</p></div>`; }
+    case "vaultdoc": { const rid = b.split("|")[2], it = S.reg.docs.find(x => x.id === rid); return it ? `<div id="vdl_${esc(rid)}" class="vdl">${docVaultHTML(it)}</div>` : ""; }
     case "acct": return `<div class="field"><label for="${id}">${esc(lab)}</label>${help}<select id="${id}" data-bsel="${esc(b)}"><option value="">Not recorded</option>${S.reg.accounts.map(x => `<option value="${x.id}"${x.id === val ? " selected" : ""}>${esc(acctLabel(x.id))}</option>`).join("")}</select>${S.reg.accounts.length ? "" : `<p class="help">Add accounts under Money › Bank accounts to pick one here.</p>`}</div>`;
   }
   return "";
@@ -2917,7 +2919,7 @@ function roleCheckHTML(){
 /* ================= vault (encrypted on this device) ================= */
 // Items are encrypted with AES-GCM using a key derived from the passphrase (PBKDF2, SHA-256, 310k rounds).
 // Only the encrypted blob is ever saved. The passphrase and the plain items live in memory while unlocked.
-const V = {key:null, items:[], err:"", busy:false, show:new Set(), confirmDel:null, confirmWipe:false, ack:false, timer:null, sealTimer:null};
+const V = {key:null, items:[], err:"", busy:false, show:new Set(), open:null, pendingDoc:null, confirmDel:null, confirmWipe:false, ack:false, timer:null, sealTimer:null};
 const te = new TextEncoder(), td = new TextDecoder();
 const b64 = buf => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
 const unb64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
@@ -2927,44 +2929,111 @@ async function vaultKey(pass, salt){
 }
 async function vaultSeal(){
   if (!V.key || !S.vault) return;
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, V.key, te.encode(JSON.stringify(V.items)));
-  S.vault = {v:1, salt:S.vault.salt, iv:b64(iv), ct:b64(ct), count:V.items.length, updated:Date.now()};
+  // Take the items and key now: locking clears them while the encryption is still running.
+  const items = V.items.slice(), key = V.key, salt = S.vault.salt, iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, te.encode(JSON.stringify(items)));
+  if (!S.vault || S.vault.salt !== salt) return;
+  S.vault = {v:1, salt, iv:b64(iv), ct:b64(ct), count:items.length, updated:Date.now()};
   save();
 }
 function vaultSealSoon(){ clearTimeout(V.sealTimer); V.sealTimer = setTimeout(vaultSeal, 500); vaultTouch(); }
-function vaultTouch(){ clearTimeout(V.timer); V.timer = setTimeout(() => { if (V.key) { vaultLock(); if (ui.view === "chapter") rerender(); toast("The vault locked itself after 5 minutes"); } }, 5 * 60 * 1000); }
-function vaultLock(){ clearTimeout(V.sealTimer); if (V.key) vaultSeal(); V.key = null; V.items = []; V.show = new Set(); V.confirmDel = null; V.confirmWipe = false; clearTimeout(V.timer); }
+function vaultTouch(){ clearTimeout(V.timer); V.timer = setTimeout(() => { if (V.key) { vaultLock().then(() => { if (ui.view === "chapter") rerender(); }); if (ui.view === "chapter") rerender(); toast("The vault locked itself after 5 minutes"); } }, 5 * 60 * 1000); }
+// Lock the vault, saving any last changes first. Returns when they're saved.
+function vaultLock(){ clearTimeout(V.sealTimer); const sealed = V.key ? vaultSeal() : Promise.resolve(); V.key = null; V.items = []; V.show = new Set(); V.open = null; V.confirmDel = null; V.confirmWipe = false; clearTimeout(V.timer); return sealed; }
 const VKINDS = {
   card:{label:"Card", fields:[["label","Which card","text"],["bank","Bank","text"],["name","Name on card","text"],["number","Card number","secret"],["expiry","Expiry (MM/YY)","text"],["notes","Notes","area"]], note:"Never store the 3-digit security code (CVV). Nobody needs it, and banks will cancel cards with a death certificate."},
   login:{label:"Login", fields:[["label","Service","text"],["username","Username or email","text"],["password","Password","secret"],["notes","Notes","area"]]},
-  code:{label:"Code or PIN", fields:[["label","What is it for?","text"],["code","Code","secret"],["notes","Notes","area"]], presets:["Phone passcode","Computer password","Alarm code","Safe combination","Password manager master password","Home wi-fi"]},
+  code:{label:"Code or PIN", fields:[["label","What is it for?","text"],["code","Code","secret"],["notes","Notes","area"]]},
+  doc:{label:"Document", fields:[["label","Document","text"],["where","Where the digital copy is","text"],["username","Username or email","text"],["password","Password","secret"],["filepw","File password, if the file has one","secret"],["notes","Notes","area"]], note:"The login for wherever this document’s digital copy is kept, such as Google Drive, Dropbox or a lawyer’s client portal."},
+  number:{label:"ID number", fields:[["label","What is it?","text"],["number","Number","secret"],["notes","Notes","area"]], note:"The full number goes here. Elsewhere in your plan, keep only the last 4 digits."},
   note:{label:"Private note", fields:[["label","Title","text"],["text","Note","secretarea"]]}
 };
+const VSECRET = {card:"card number", login:"password", code:"code", number:"number", note:"note", doc:"passwords"};
+// Ideas for what to put in the vault, most useful first. Each one is a kind and a name.
+const VIDEAS = () => { const nz = L().nz; return [
+  ["logins","Logins",[["login","Online banking"],["login","Apple ID"],["login","Google account"],["login", nz ? "RealMe" : "myGov"],["login", nz ? "KiwiSaver" : "Super fund"],["login","Share trading"],["login","PayPal"],["login","Mobile phone account"],["login","Energy and water accounts"],["login","Facebook or Instagram"]]],
+  ["cards","Cards",[["card","Credit card"],["card","Debit card"]]],
+  ["codes","Codes and PINs",[["code","Alarm code"],["code","Safe combination"],["code","Garage or gate code"],["code","Key lockbox"],["code","Home wi-fi"],["code","Tablet passcode"],["code","Voicemail PIN"]]],
+  ["ids","ID numbers",(nz ? [["number","IRD number"],["number","MSD client number"]] : [["number","Tax file number"],["number","Medicare card"],["number","Centrelink CRN"]]).concat([["number","Passport"],["number","Driver licence"]])],
+  ["notes","Private notes",[["note","Two-step backup codes"],["note","Security questions and answers"]]]]; };
+const VSTART = [["code","Phone passcode"],["login","Main email"],["code","Password manager master password"],["code","Computer password"]];
+function vaultIdeasHTML(){
+  const have = new Set(V.items.map(x => lc(x.label))), left = l => l.filter(([, n]) => !have.has(lc(n)));
+  const chip = ([k, n]) => `<button class="chip add" data-act="vadd" data-k="${k}" data-l="${esc(n)}">+ ${esc(n)}</button>`;
+  const start = left(VSTART), groups = VIDEAS().map(([key, title, l]) => [key, title, left(l)]).filter(g => g[2].length);
+  return `<div class="stack videas"><span class="label">What to put in here</span>
+    ${start.length ? `<p class="help">Start with these. They unlock everything else.</p><div class="chips">${start.map(chip).join("")}</div>` : ""}
+    ${groups.length ? `<div class="catalogue">${groups.map(([key, title, l]) => `<details${det("videa-" + key, false)}><summary>${esc(title)} <span class="small muted">(${l.length})</span></summary><div class="chips">${l.map(chip).join("")}</div></details>`).join("")}</div>` : ""}
+    <div class="chips"><span class="small muted" style="align-self:center">Something else:</span>${[["card","Card"],["login","Login"],["code","Code or PIN"],["number","ID number"],["doc","Document"],["note","Private note"]].map(([k, n]) => `<button class="chip add" data-act="vadd" data-k="${k}">+ ${n}</button>`).join("")}</div>
+    <p class="help">Never put in here: the vault’s own passphrase, a card’s 3-digit security code, or a crypto recovery phrase. Keep a recovery phrase on paper somewhere safe, and say where in Money › Cryptocurrency.</p></div>`;
+}
+// What a closed vault item shows under its name: nothing secret, just enough to tell items apart.
+function vaultSub(it){
+  const digits = String(it.number || "").replace(/\D/g, "");
+  if (it.kind === "card") return [it.bank, digits.length >= 4 && "ends " + digits.slice(-4), it.expiry && "expires " + it.expiry].filter(Boolean).join(" · ");
+  if (it.kind === "login") return it.username || "";
+  if (it.kind === "doc") return [it.where, it.username].filter(Boolean).join(" · ");
+  return "";
+}
+// Important documents with a digital copy: the login for wherever each is kept can go in the vault.
+// The plan only records that a login is there (doc.vault), never the login itself.
+function docVaultHTML(it){
+  if (!filled(it.digital)) return "";
+  return `<div class="field"><span class="label">Login for the digital copy</span><p class="help">${it.vault ? "Saved in the vault. Your executor gets it with the vault." : "If it’s kept online, such as in Google Drive, Dropbox or your lawyer’s client portal, keep the login in the vault so your family can get to it."}</p><div><button type="button" class="btn sm" data-act="vdoc" data-id="${it.id}">${it.vault ? "Open it in the vault" : S.vault ? "Keep its login in the vault" : "Set up the vault for its login"}</button></div></div>`;
+}
+function vaultDocsHTML(){
+  const docs = S.reg.docs.filter(x => filled(x.digital));
+  const row = d => { const it = V.items.find(x => x.docId === d.id);
+    return `<div class="row between vdoc"><span><strong>${esc(d.type || "Document")}</strong><br><span class="small muted">${esc(d.digital)}</span></span><button class="btn sm${it ? " ghost" : ""}" data-act="vdoc" data-id="${d.id}">${it ? "Open its login" : "+ Add its login"}</button></div>`; };
+  return `<div class="stack vdocs"><span class="label">Important documents</span>
+    <p class="help">${docs.length ? "These have a digital copy. Keep the login for wherever each one is stored, so your family can get to it." : "None of your documents has a digital copy written down yet. Say where one is kept online, in Admin › Important documents, and it shows here."}</p>
+    ${docs.map(row).join("")}
+    <div class="row"><button class="chip add" data-act="vadd" data-k="doc">+ Another document’s login</button><button class="btn sm ghost" data-act="go" data-v="chapter" data-ch="admin" data-stid="docs">${docs.length ? "Change documents" : "Go to Important documents"}</button></div></div>`;
+}
+// Open the vault login for a document, adding it first if it isn't there yet.
+function vaultDocOpen(){
+  const id = V.pendingDoc; V.pendingDoc = null; if (!id || !V.key) return false;
+  const doc = S.reg.docs.find(x => x.id === id); if (!doc) return false;
+  let it = V.items.find(x => x.docId === id);
+  if (!it) { it = {id:uid(), kind:"doc", docId:id, label:doc.type || "Document", where:doc.digital || ""}; V.items.push(it); V.show.add(it.id); doc.vault = true; touched(); save(); vaultSealSoon(); }
+  if (V.open && V.open !== it.id) V.show.delete(V.open);
+  V.open = it.id; V.confirmDel = null; vaultTouch(); rerender();
+  setTimeout(() => { const e2 = document.querySelector(`.vault [data-act=vopen][data-id="${it.id}"]`); if (e2) e2.scrollIntoView({block:"center"}); }, 30);
+  return true;
+}
 function vaultHTML(){
   if (!window.crypto || !crypto.subtle) return `<div class="note">The vault needs a secure connection and isn’t available here.</div>`;
-  if (!S.vault) return `<div class="vault"><div class="stack"><span class="eyebrow">Set up your vault</span><h3>Choose a passphrase</h3>
+  const pdoc = V.pendingDoc && S.reg.docs.find(x => x.id === V.pendingDoc);
+  const waiting = pdoc ? `<p class="tip">${S.vault ? "Unlock the vault" : "Once the vault is set up"}, and the login for your ${esc((pdoc.type || "document").toLowerCase())} opens.</p>` : "";
+  if (!S.vault) return `<div class="vault">${waiting}<div class="stack"><span class="eyebrow">Set up your vault</span><h3>Choose a passphrase</h3>
      <p class="help">Use four or more random words, like <em>harbour pencil mango rocket</em>. It’s easy to remember and very hard to guess. Don’t reuse a password from anywhere else.</p></div>
      <div class="grid2"><div class="field"><label for="vp1">Passphrase</label><input id="vp1" type="password" autocomplete="new-password"></div><div class="field"><label for="vp2">Type it again</label><input id="vp2" type="password" autocomplete="new-password"></div></div>
      <button class="chip${V.ack ? " on" : ""}" data-act="vack" aria-pressed="${V.ack}">I understand: if this passphrase is lost, nobody can open the vault, including FirstLight.</button>
      ${V.err ? `<p class="note">${esc(V.err)}</p>` : ""}<div><button class="btn primary" data-act="vcreate" ${V.busy ? "disabled" : ""}>${V.busy ? "Setting up…" : "Create my vault"}</button></div></div>`;
-  if (!V.key) return `<div class="vault"><div class="row between"><div class="stack" style="gap:2px"><span class="eyebrow">Locked</span><h3>${S.vault.count || 0} ${S.vault.count === 1 ? "item" : "items"} in the vault</h3></div></div>
+  if (!V.key) return `<div class="vault">${waiting}<div class="row between"><div class="stack" style="gap:2px"><span class="eyebrow">Locked</span><h3>${S.vault.count || 0} ${S.vault.count === 1 ? "item" : "items"} in the vault</h3></div></div>
      <div class="field"><label for="vpu">Passphrase</label><input id="vpu" type="password" autocomplete="current-password"></div>
      ${V.err ? `<p class="note">${esc(V.err)}</p>` : ""}<div><button class="btn primary" data-act="vunlock" ${V.busy ? "disabled" : ""}>${V.busy ? "Unlocking…" : "Unlock"}</button></div></div>`;
+  // A list of closed items: one opens at a time, and closing it hides its secrets again.
   const items = V.items.map(it => {
-    const def = VKINDS[it.kind] || VKINDS.note, shown = V.show.has(it.id);
+    const def = VKINDS[it.kind] || VKINDS.note, shown = V.show.has(it.id), open = V.open === it.id;
+    const head = `<button class="entry-head" aria-expanded="${open}" data-act="vopen" data-id="${it.id}"><span class="entry-title">${esc(it.label || def.label)}</span><span class="entry-sub">${esc(vaultSub(it))}</span><span class="tag" style="margin-left:auto">${esc(def.label)}</span></button>`;
+    if (!open) return `<div class="entry">${head}</div>`;
     const fields = def.fields.map(([k, lab, type]) => {
       const id = "vf_" + it.id + "_" + k, val = esc(it[k] || "");
       if (type === "area" || type === "secretarea") return `<div class="field"><label for="${id}">${esc(lab)}</label><textarea id="${id}" rows="3" data-vb="${it.id}|${k}" class="${type === "secretarea" && !shown ? "masked" : ""}">${val}</textarea></div>`;
       return `<div class="field"><label for="${id}">${esc(lab)}</label><input id="${id}" type="${type === "secret" && !shown ? "password" : "text"}" data-vb="${it.id}|${k}" value="${val}" autocomplete="off"></div>`;
     }).join("");
     const del = V.confirmDel === it.id ? `<span class="small muted">Delete this?</span><button class="btn sm" data-act="vdelyes" data-id="${it.id}">Yes, delete</button><button class="btn sm ghost" data-act="vdelno">Keep it</button>` : `<button class="btn sm ghost" data-act="vdel" data-id="${it.id}">Delete</button>`;
-    return `<div class="entry open"><div class="entry-head" style="cursor:default"><span class="entry-title">${esc(it.label || def.label)}</span><span class="tag">${esc(def.label)}</span><button class="btn sm ghost" style="margin-left:auto" data-act="vshow" data-id="${it.id}">${shown ? "Hide" : "Show"}</button></div>
-      <div class="entry-body">${def.note ? `<p class="help">${esc(def.note)}</p>` : ""}<div class="grid2">${fields}</div><div class="row" style="justify-content:flex-end">${del}</div></div></div>`;
+    const secret = VSECRET[it.kind] || "it";
+    return `<div class="entry open">${head}
+      <div class="entry-body"><div class="row between">${def.note ? `<p class="help" style="flex:1 1 220px">${esc(def.note)}</p>` : "<span></span>"}<button class="btn sm" data-act="vshow" data-id="${it.id}" aria-pressed="${shown}">${shown ? "Hide the " + secret : "Show the " + secret}</button></div>
+      <div class="grid2">${fields}</div><div class="row between"><button class="btn sm primary" data-act="vopen" data-id="">Done</button><div class="row">${del}</div></div></div></div>`;
   }).join("");
   return `<div class="vault"><div class="row between"><div class="stack" style="gap:2px"><span class="eyebrow">Unlocked</span><h3>Your vault</h3></div><button class="btn sm" data-act="vlock">Lock now</button></div>
+    ${V.items.length ? `<p class="help">${V.items.length} ${V.items.length === 1 ? "item" : "items"}. Tap one to open it.</p>` : ""}
     <div class="entries">${items || `<p class="empty">Nothing in the vault yet.</p>`}</div>
-    <div class="chips"><button class="chip add" data-act="vadd" data-k="card">+ Card</button><button class="chip add" data-act="vadd" data-k="login">+ Login</button>${VKINDS.code.presets.map(p => `<button class="chip add" data-act="vadd" data-k="code" data-l="${esc(p)}">+ ${esc(p)}</button>`).join("")}<button class="chip add" data-act="vadd" data-k="note">+ Private note</button></div>
+    ${vaultDocsHTML()}
+    ${vaultIdeasHTML()}
     <p class="help">Changes are saved, encrypted, as you type. The vault locks itself after 5 minutes, or when you leave this page.</p>
     <div class="panel"><span class="label">How your executor gets in</span><p class="help">Only in the second stage of release, after a death certificate. They’ll also need your passphrase: put it in a sealed envelope with your will, or give it to your lawyer. Never write it anywhere in this plan.</p></div>
     <div class="row">${V.confirmWipe ? `<span class="small">Delete the whole vault and everything in it?</span><button class="btn sm" data-act="vwipeyes">Yes, delete it</button><button class="btn sm ghost" data-act="vwipeno">Keep it</button>` : `<button class="btn sm ghost" data-act="vwipe">Delete the vault</button>`}</div></div>`;
@@ -3574,7 +3643,7 @@ function familyTasks(sit){
     add("phone", "today", `Don’t cancel ${o}’s phone or email yet`, "Security codes and password resets come through them." + (ans("admin.keep.mobile") ? "\nMobile: " + ans("admin.keep.mobile") : ""), nmOf(holders("phone_keeper")));
     if (holders("social").length) add("social", "week", "Post on social media", ans("personal.announce.timing") ? `When: ${TIMING[ans("personal.announce.timing")]}.` + (ans("personal.announce.notice") ? "\nA draft is in the plan." : "") : "", nmOf(holders("social")));
     if (holders("spokesperson").length || ans("personal.who.groups")) add("groups", "week", "Tell group chats, work and clubs", ans("personal.who.groups") || "", nmOf(holders("spokesperson")));
-    add("will", "week", "Find the original will", will ? (will.location || "") + (will.holder ? (will.location ? " · " : "") + "Held by " + will.holder : "") : "No location recorded.", nmOf(exec));
+    add("will", "week", "Find the original will", will ? (will.location || "") + (will.holder ? (will.location ? " · " : "") + "Held by " + will.holder : "") + (filled(will.digital) ? "\nDigital copy: " + will.digital + (will.vault ? " (the login is in the vault)" : "") : "") : "No location recorded.", nmOf(exec));
     if (ans("personal.service.kind") || ans("personal.service.music")) add("farewell", "week", "Plan the farewell", [ans("personal.service.kind") && "Kind: " + ans("personal.service.kind"), ans("personal.service.venue") && "Where: " + ans("personal.service.venue"), ans("personal.service.music") && "Music: " + ans("personal.service.music")].filter(Boolean).join("\n"), nmOf(holders("funeral_lead")));
     add("certs", "week", "Order death certificates", `From ${L().bdm}. The funeral director can usually help.`, nmOf(exec));
     S.reg.accounts.forEach(x => add("acct-" + x.id, "later", `Tell ${x.inst || "the bank"}`, `${x.type || "Account"}${acctTail(x) ? " ••" + acctTail(x) : ""}. ${x.owner === "Joint" ? "Joint" + (filled(x.jointWith) ? " with " + whoText(x.jointWith) : "") + ", so it usually passes to them." : "In one name, so it will be frozen until probate or a small-estate release."}`, nmOf(exec)));
@@ -3601,7 +3670,7 @@ function planFacts(){
   familyPeople().concat(S.reg.people.filter(p => (p.roles || []).includes("professional"))).forEach(p => push("Family › People", p.name, [p.rel, p.phone, (p.roles || []).filter(r => r !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · ")));
   ["accounts","retire","policies","assets","points","debts","costs","docs","digital","pms","govs","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
     push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", pms:"Admin › Password managers", govs:"Admin › Government services", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
-      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, rg === "pms" && x.account && "Account: " + x.account, rg === "pms" && x.kit && "Emergency kit or recovery code: " + x.kit, rg === "govs" && x.login && "Account: " + x.login, rg === "govs" && filled(x.agent) && "Tax agent: " + whoText(x.agent), x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
+      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, rg === "pms" && x.account && "Account: " + x.account, rg === "pms" && x.kit && "Emergency kit or recovery code: " + x.kit, rg === "govs" && x.login && "Account: " + x.login, rg === "docs" && filled(x.digital) && "Digital copy: " + x.digital + (x.vault ? " (login in the vault)" : ""), rg === "govs" && filled(x.agent) && "Tax agent: " + whoText(x.agent), x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
   Object.keys(WORDS).forEach(sec => WORDS[sec].items.forEach((it, i) => push("Letters and words › " + WORDS[sec].title, it.q, S.answers[wordsKey(sec, i)], wordsKey(sec, i))));
   return out;
 }
@@ -4012,7 +4081,9 @@ function executorDoc(){
     holders("immediate_carer").length ? "Make sure " + holders("immediate_carer").map(p => esc(p.name)).join(" and ") + " can care for the dependants." : "",
     holders("pet_carer").length ? "Ask " + holders("pet_carer").map(p => esc(p.name)).join(" and ") + " to take the pets." : "",
     `Keep the mobile${ans("admin.keep.mobile") ? " (" + esc(ans("admin.keep.mobile")) + ")" : ""} and email${ans("admin.keep.email") ? " (" + esc(ans("admin.keep.email")) + ")" : ""} active.`];
+  const digi = S.reg.docs.filter(x => filled(x.digital));
   const weeks = ["Find the original will: " + (will ? esc(will.location || "location not recorded") : "<em>no location recorded</em>") + ".",
+    digi.length ? "Digital copies of documents: " + digi.map(x => `${esc(x.type || "Document")} (${esc(x.digital)}${x.vault ? ", the login is in the vault" : ""})`).join("; ") + "." : "",
     `Order several death certificates from ${esc(l.bdm)}.`, `Use ${esc(l.notify)}.`,
     ...S.reg.accounts.map(x => `Tell ${esc(x.inst || "the bank")} about the ${esc((x.type || "account").toLowerCase())}${acctFull(x) ? " (" + esc(acctFull(x)) + ")" : ""}. ${x.owner === "Joint" ? "It’s joint" + (filled(x.jointWith) ? " with " + esc(whoText(x.jointWith)) : "") + ", so it usually passes to them." : "It’s in one name, so it will be frozen until probate or a small-estate release."}`),
     ...S.reg.retire.map(x => `Claim from ${esc(x.fund || l.fund)}.${!l.nz && (x.nomination || filled(x.nominee)) ? " Nomination: " + esc(x.nomination || "type not recorded") + (filled(x.nominee) ? ", to " + esc(whoText(x.nominee)) : "") + "." : ""}${x.insurance === "yes" ? " Ask about the insurance inside it." : ""}`),
@@ -4102,7 +4173,8 @@ function outputsHTML(){
 /* ================= render ================= */
 function render(){
   fidN = 0;
-  if (V.key) { const ch = ui.view === "chapter" && ui.chapter === "admin" ? chapterById("admin") : null, st = ch && stepsOf(ch)[ui.step]; if (!st || st.id !== "vault") vaultLock(); }
+  { const ch = ui.view === "chapter" && ui.chapter === "admin" ? chapterById("admin") : null, st = ch && stepsOf(ch)[ui.step];
+    if (!st || st.id !== "vault") { V.pendingDoc = null; if (V.key) vaultLock(); } }
   const app = document.getElementById("app");
   if (ui.view === "welcome") app.innerHTML = welcomeHTML();
   else if (ui.view === "check") app.innerHTML = topHTML(true) + checkHTML();
@@ -4460,7 +4532,7 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
     V.busy = true; rerender();
     const salt = crypto.getRandomValues(new Uint8Array(16));
     V.key = await vaultKey(p1, salt); V.items = []; S.vault = {v:1, salt:b64(salt)};
-    await vaultSeal(); V.busy = false; V.ack = false; vaultTouch(); touched(); rerender(); toast("Vault created and unlocked"); },
+    await vaultSeal(); V.busy = false; V.ack = false; vaultTouch(); touched(); if (!vaultDocOpen()) rerender(); toast("Vault created and unlocked"); },
   async vunlock(){
     const p = (document.getElementById("vpu") || {}).value || ""; if (!p) return;
     V.busy = true; V.err = ""; rerender();
@@ -4468,16 +4540,25 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
       const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:unb64(S.vault.iv)}, key, unb64(S.vault.ct));
       V.key = key; V.items = JSON.parse(td.decode(pt)); vaultTouch();
     } catch(e) { V.err = "That passphrase doesn’t match. Check for typos and capital letters."; }
-    V.busy = false; rerender(); },
-  vlock(){ vaultLock(); rerender(); },
-  vadd(el){ const it = {id:uid(), kind:el.dataset.k, label:el.dataset.l || ""}; V.items.push(it); V.show.add(it.id); vaultSealSoon(); rerender(); },
+    V.busy = false; if (!vaultDocOpen()) rerender(); },
+  // A document's login: open it in the vault (adding it if needed), or unlock the vault first.
+  vdoc(el){ V.pendingDoc = el.dataset.id;
+    if (V.key) { vaultDocOpen(); return; }
+    const ch = chapterById("admin"), i = stepsOf(ch).findIndex(s => s.id === "vault");
+    go("chapter", {chapter:"admin", step:Math.max(0, i)});
+    setTimeout(() => { const v2 = document.querySelector(".vault"); if (v2) v2.scrollIntoView({block:"start"}); const f2 = document.getElementById("vpu") || document.getElementById("vp1"); if (f2) f2.focus({preventScroll:true}); }, 30); },
+  vlock(){ vaultLock().then(rerender); rerender(); },
+  vadd(el){ const it = {id:uid(), kind:el.dataset.k, label:el.dataset.l || ""}; V.items.push(it); if (V.open) V.show.delete(V.open); V.open = it.id; V.show.add(it.id); V.confirmDel = null; vaultSealSoon(); rerender(); },
+  // Open or close a vault item. Closing it hides its secrets again.
+  vopen(el){ const id = el.dataset.id, was = V.open; if (was) V.show.delete(was); V.open = id && id !== was ? id : null; V.confirmDel = null; vaultTouch(); rerender(); },
   vshow(el){ const id = el.dataset.id; V.show.has(id) ? V.show.delete(id) : V.show.add(id); vaultTouch(); rerender(); },
   vdel(el){ V.confirmDel = el.dataset.id; rerender(); },
   vdelno(){ V.confirmDel = null; rerender(); },
-  vdelyes(el){ V.items = V.items.filter(x => x.id !== el.dataset.id); V.confirmDel = null; vaultSealSoon(); rerender(); },
+  vdelyes(el){ const gone = V.items.find(x => x.id === el.dataset.id); V.items = V.items.filter(x => x.id !== el.dataset.id);
+    if (gone && gone.docId && !V.items.some(x => x.docId === gone.docId)) { const d2 = S.reg.docs.find(x => x.id === gone.docId); if (d2) { delete d2.vault; touched(); save(); } } if (V.open === el.dataset.id) V.open = null; V.show.delete(el.dataset.id); V.confirmDel = null; vaultSealSoon(); rerender(); },
   vwipe(){ V.confirmWipe = true; rerender(); },
   vwipeno(){ V.confirmWipe = false; rerender(); },
-  vwipeyes(){ V.key = null; V.items = []; V.confirmWipe = false; S.vault = null; save(); rerender(); toast("The vault has been deleted"); },
+  vwipeyes(){ V.key = null; V.items = []; V.confirmWipe = false; S.vault = null; S.reg.docs.forEach(d2 => delete d2.vault); save(); rerender(); toast("The vault has been deleted"); },
   noop(){}
 };
 // Save a file: through Claude's downloads when this runs as an artifact, otherwise a normal browser download.
@@ -4513,6 +4594,7 @@ document.addEventListener("input", e => {
   if (el.dataset.live === "rq" && ui.research) { ui.research.q = v; refreshResearch(); return; }
   if (el.dataset.live === "allq") { const box = document.getElementById("alltx"); if (box) box.innerHTML = allTxTableHTML(allTxRows(v)); }
   if (el.dataset.live === "total") { const tEl = document.getElementById("cost-total"); if (tEl) tEl.textContent = money(costsTotal()); }
+  if (el.dataset.live === "vdoc") { const id = b.split("|")[2], it = S.reg.docs.find(x => x.id === id), box = document.getElementById("vdl_" + id); if (it && box) box.innerHTML = docVaultHTML(it); }
   if (el.dataset.live === "bq") { const id = b.split("|")[2], it = S.reg.costs.find(x => x.id === id), box = document.getElementById("bqh_" + id); if (it && box) box.innerHTML = bqHeadHTML(it); }
   if (b.startsWith("u|") || b.startsWith("fi|")) return;
   if (b.startsWith("a|")) { S.stamps = S.stamps || {}; S.stamps[b.slice(2)] = Date.now(); }
