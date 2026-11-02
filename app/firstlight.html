@@ -600,7 +600,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const fnv = (x, ...a) => typeof x === "function" ? x(...a) : x;
 const cap = s => String(s || "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const filled = v => Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
-const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
+const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],points:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
 const blank = () => ({v:2, started:false, example:false, scanDone:false,
   settings:{name:"", tone:"soft", faith:"neutral", country:"AU", region:"NSW", subject:"me", subjectName:""},
   scan:{}, check:{}, answers:{}, status:{}, reg:blankReg(),
@@ -675,7 +675,7 @@ function plist(v){
 const pctOf = x => { const n = parseFloat(String(x.pct == null ? "" : x.pct).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : null; };
 const pctTxt = n => String(+n.toFixed(2));
 // The fields where each person gets a share: [register, field, Strengthen step].
-const SPLITS = [["retire","nominee","retire"],["policies","beneficiary","insurance"],["assets","intendedFor","assets"]];
+const SPLITS = [["retire","nominee","retire"],["policies","beneficiary","insurance"],["assets","intendedFor","assets"],["points","intendedFor","points"]];
 // Shares split evenly by default: one person gets 100%, two get 50% each, three get 33.33, 33.33 and 33.34.
 function evenSplit(l){ const n = l.length, each = Math.floor(10000 / n) / 100; l.forEach((x, i) => { x.pct = pctTxt(i === n - 1 ? 100 - each * (n - 1) : each); }); return l; }
 // True when the shares are blank or still an even split, so they can be split again when someone is added or removed.
@@ -827,6 +827,29 @@ function F(){
 
 /* ================= registers ================= */
 const OWN = [["Sole","Just me"],["Joint tenants","Joint tenants"],["Tenants in common","Tenants in common"],["Trust","A trust"],["Company","A company"],["Not sure","Not sure"]];
+const POINT_TYPES = [["Frequent flyer","Frequent flyer"],["Loyalty points","Loyalty points"],["Card reward points","Card reward points"],["Gift card","Gift card or voucher"],["Store credit","Store credit"],["Travel credit","Travel credit"],["Other","Something else"]];
+const pointsType = s => /gift ?card|voucher/i.test(s) ? "Gift card" : /fl[yi]er|airpoints|velocity|qantas|krisflyer/i.test(s) ? "Frequent flyer" : /travel credit|flight credit/i.test(s) ? "Travel credit"
+  : /credit/i.test(s) ? "Store credit" : /flybuys|fly buys|rewards|points|smartfuel|onecard/i.test(s) ? "Loyalty points" : "";
+// Plans from before points had their own list: the old written list becomes one card per item, or one card holding the text.
+function movePoints(s){
+  const k = "money.points.list", old = s.answers && s.answers[k]; if (!filled(old)) return s;
+  if (!Array.isArray(s.reg.points)) s.reg.points = [];
+  const bits = String(old).split(/\n|;|,/).map(x => x.trim().replace(/\.$/, "")).filter(Boolean);
+  if (bits.length && bits.length <= 12 && bits.every(x => x.length <= 60)) bits.forEach(b2 => s.reg.points.push({id:uid(), what:b2.charAt(0).toUpperCase() + b2.slice(1), type:pointsType(b2)}));
+  else s.reg.points.push({id:uid(), what:"Points and vouchers", notes:String(old).trim()});
+  delete s.answers[k]; return s;
+}
+// What the family should do with points, a voucher or credit, and what they need to do it. Plain text.
+function pointsTodo(x){
+  const who = x.outcome !== "Close" && filled(x.intendedFor) ? whoText(x.intendedFor) : "";
+  return ({Transfer:"transfer it to " + (who || "the chosen person"), Use:"use or redeem it" + (who ? " for " + who : ""), Cash:"claim its value for the estate", Close:"close it"})[x.outcome] || (who ? "it’s meant for " + who : "decide what to do with it");
+}
+function pointsDetail(x){
+  const ac = x.linked && S.reg.accounts.find(a2 => a2.id === x.linked);
+  return [x.member && "Member or card: " + x.member, x.balance && "Balance: " + x.balance, x.expires && "Expires " + x.expires,
+    ac && `Earned through ${acctLabel(x.linked)}: use or move them before ${ac.type === "Credit card" ? "the card" : "the account"} is closed`, x.where && "Where: " + x.where, x.notes].filter(Boolean);
+}
+const sentence = s => /[.!?]$/.test(s) ? s : s + ".";
 const PLATFORM_TIPS = {
   "Apple ID":"Add a Legacy Contact: Settings › your name › Sign-In & Security › Legacy Contact. They’ll get an access key to your photos and data.",
   "Google account":"Set up Inactive Account Manager at myaccount.google.com › Data & privacy › Make a plan for your digital legacy.",
@@ -919,6 +942,21 @@ const REG = {
     presets:() => ["Home","Investment property","Car","Boat / caravan","Shares","Managed fund","Cryptocurrency","Collectibles","Business interest","Land"].map(n => ({label:n, data:{what:n, type:n}})),
     fields:() => [t("what","What is it?"), t("type","Type"), c("ownership","How is it owned?",OWN,{help:"Joint tenants: passes to the other owner automatically, without probate. Tenants in common: your share follows your will."}),
       p("intendedFor","Who should it go to?",{split:true, help:"If it’s to be shared, give each person’s share. Your will (or how it’s owned) is what decides this legally."}), a("notes","Notes (where the paperwork is, any loan against it)",{smart:true, rows:3})]},
+  // Points, vouchers and credit: set out like assets, with who gets them and the details needed to claim them.
+  points:{noun:"card or program", title:x => x.what || x.type,
+    sub:x => [x.what && x.type, x.balance, x.expires && "expires " + x.expires, x.outcome === "Close" ? "close it" : filled(x.intendedFor) && "to " + whoText(x.intendedFor)].filter(Boolean).join(" · "),
+    presets:() => (L().nz ? [["Airpoints","Frequent flyer"],["Qantas Frequent Flyer","Frequent flyer"],["Flybuys","Loyalty points"],["Everyday Rewards","Loyalty points"],["AA Smartfuel","Loyalty points"]]
+      : [["Qantas Frequent Flyer","Frequent flyer"],["Velocity Frequent Flyer","Frequent flyer"],["Flybuys","Loyalty points"],["Everyday Rewards","Loyalty points"]])
+      .concat([["","Card reward points"],["","Gift card"],["","Store credit"],["","Travel credit"]]).map(([n, ty]) => ({label:n || ty, data:n ? {what:n, type:ty} : {type:ty}})),
+    fields:() => [t("what","Program, store or card",{ph:"e.g. Qantas Frequent Flyer, or a Myer gift card"}), c("type","Type",POINT_TYPES),
+      t("member","Member or card number",{ph:"e.g. 1928 3746", help:"A member number is fine here. For a gift card, the last 4 digits are enough: its full number and PIN go in the vault."}),
+      t("balance","Balance or value",{ph:"e.g. 84,000 points, or $100"}), d("expires","Expires on (if known)",{help:"Points often expire after a while with no activity. Gift cards have the date on the back."}),
+      t("where","Where is the card, app or login?",{ph:"e.g. The Qantas app on my phone, or the kitchen drawer", help:"The password itself goes in the vault."}),
+      c("outcome","What should happen to it?",[["Transfer","Transfer to someone"],["Use","Use or redeem it"],["Cash","Claim its value for the estate"],["Close","Close it"],["Decide","Let them decide"]]),
+      p("intendedFor","Who should get it?",{split:true, extra:["My estate"], show:x => x.outcome !== "Close", help:"If it’s to be shared, give each person’s share. Some programs only transfer to one person, and some cancel points when a member dies, so check the rules."}),
+      {k:"linked", label:"Earned through a card or account", type:"acct", more:true, help:"Reward points on a credit card are usually lost when the card is closed, so your family should use or move them first."},
+      a("notes","Notes (how to claim it, transfer rules, anything linked)",{smart:true, rows:3, more:true})],
+    tip:() => "Points and credit can be worth real money. Many programs will transfer or pay out points after a death if the family asks, with a death certificate."},
   debts:{noun:"debt", title:x => x.lender || x.type, sub:x => [x.type, x.last4 && "••" + x.last4, x.insured === "yes" ? "insured" : ""].filter(Boolean).join(" · "),
     presets:() => ["Mortgage","Car loan","Personal loan","Credit card","Buy now pay later","Tax owing", L().nz ? "Student loan" : "HELP debt","Guarantee for someone else"].map(n => ({label:n, data:{type:n}})),
     fields:() => [t("lender","Lender"), t("type","Type"), t("last4","Account (last 4 only)",{digits:true}), c("insured","Covered by insurance on death?",ynu), a("notes","Notes",{rows:3})],
@@ -1001,8 +1039,7 @@ const CHAPTERS = [
      r("business","Who should step in?"), t("sop","Where are the procedures and records kept?"), a("clients","Clients or suppliers who need to be told",{rows:3})]},
    {id:"owed", when:f => f.owed, title:"Money owed to you", why:"Loans to family are a common source of conflict. Write down what you’d like to happen.",
     fields:[a("who","Who owes what?",{rows:3}), c("intent","What should happen to these loans?",[["forgive","Forgive them"],["repay","They should be repaid to the estate"],["mixed","It depends (explain above)"]])]},
-   {id:"points", title:"Points, vouchers and credit", why:"Frequent flyer points, loyalty points and gift cards are easily lost. Some can be transferred if someone asks.",
-    fields:[a("list","Points programs, gift cards and store credit",{rows:3, ph:"e.g. Qantas Frequent Flyer, Flybuys, a gift card in the kitchen drawer"})]}
+   {id:"points", title:"Points, vouchers and credit", why:"Frequent flyer points, loyalty points and gift cards are easily lost. Say who should get each one, and what your family needs to claim it.", reg:"points"}
   ]},
  {id:"admin", title:"Admin", short:"Bills, subscriptions, documents and online accounts.",
   intro:{soft:"The paperwork of everyday life. Start with your bills: you can find most of them from a bank statement in a minute.", neutral:"Bills, documents, services and accounts.", direct:"Every bill, document, government service and login location."},
@@ -1860,6 +1897,9 @@ function exampleState(){
   s.reg.accounts = [cba, {id:uid(), inst:"ING", type:"Savings", bsb:"923-100", acctno:"5550 0937", owner:"Joint", jointWith:[{name:"Jo Morgan", pct:""}]}, cc];
   s.reg.retire = [{id:uid(), fund:"AustralianSuper", nomination:"Non-binding", nominee:[{name:"Jo Morgan", pct:"60"}, {name:"Mia Morgan", pct:"20"}, {name:"Tom Morgan", pct:"20"}], insurance:"yes"}];
   s.reg.policies = [{id:uid(), insurer:"AustralianSuper (default cover)", type:"Life and TPD", heldVia:"Super"}, {id:uid(), insurer:"Group cover through work", type:"Life", heldVia:"Work"}];
+  s.reg.points = [{id:uid(), what:"Qantas Frequent Flyer", type:"Frequent flyer", member:"1928 3746", balance:"84,000 points", where:"The Qantas app on my phone", outcome:"Transfer", intendedFor:[{name:"Jo Morgan", pct:"100"}], notes:"Ask Qantas about moving the points to Jo."},
+    {id:uid(), what:"Westpac Altitude Rewards", type:"Card reward points", balance:"31,500 points", linked:cc.id, outcome:"Use", intendedFor:[{name:"Mia Morgan", pct:"50"}, {name:"Tom Morgan", pct:"50"}]},
+    {id:uid(), what:"Myer gift card", type:"Gift card", member:"Ends 4410", balance:"$100", expires:"2027-12-24", where:"Kitchen drawer, under the takeaway menus", outcome:"Use", intendedFor:[{name:"Mia Morgan", pct:"100"}]}];
   s.reg.costs = [
     {id:uid(), provider:"Netflix", type:"Netflix", billers:["Netflix"], category:"Phone & TV", amount:"25.99", freq:"Monthly", paidFrom:cc.id, outcome:"Cancel"},
     {id:uid(), provider:"Spotify Family", type:"Spotify", billers:["Spotify"], category:"Phone & TV", amount:"22.99", freq:"Monthly", paidFrom:cc.id, outcome:"Transfer", transferTo:"Mia"},
@@ -1913,7 +1953,7 @@ const setB = (b, v) => { const [o,k] = ref(b); o[k] = v; };
 
 let store = {ref:null}, saveTimer = null, saving = Promise.resolve(), saveLabel = "";
 const LS = "amfy-plan-v2";
-function hydrate(o){ const b = blank(); return evenDefaults(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []})); }
+function hydrate(o){ const b = blank(); return evenDefaults(movePoints(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []}))); }
 function loadLocal(){ try { const raw = localStorage.getItem(LS); if (raw) return hydrate(JSON.parse(raw)); } catch(e) {} return null; }
 function save(){
   clearTimeout(saveTimer); setSave("Saving…");
@@ -1981,7 +2021,7 @@ function inputHTML(b, f, val){
       return `<div class="field"><span class="label">${esc(lab)}</span>${help}${chipsHTML(b, opts, val, true).replace(/<\/div>$/, more + "</div>")}</div>`; }
     case "btype": { const rid = b.split("|")[2], it = S.reg.costs.find(x => x.id === rid), cur = it ? typeOf(it) : (val || "");
       return `<div class="field"><label for="${id}">${esc(lab)}</label><select id="${id}" data-bsel="${esc(b)}">${typeOptionsHTML(cur)}</select><p class="help">Not listed? Add your own type in its category below the list of bills.</p></div>`; }
-    case "acct": return `<div class="field"><label for="${id}">${esc(lab)}</label><select id="${id}" data-bsel="${esc(b)}"><option value="">Not recorded</option>${S.reg.accounts.map(x => `<option value="${x.id}"${x.id === val ? " selected" : ""}>${esc(acctLabel(x.id))}</option>`).join("")}</select>${S.reg.accounts.length ? "" : `<p class="help">Add accounts under Money › Bank accounts to pick one here.</p>`}</div>`;
+    case "acct": return `<div class="field"><label for="${id}">${esc(lab)}</label>${help}<select id="${id}" data-bsel="${esc(b)}"><option value="">Not recorded</option>${S.reg.accounts.map(x => `<option value="${x.id}"${x.id === val ? " selected" : ""}>${esc(acctLabel(x.id))}</option>`).join("")}</select>${S.reg.accounts.length ? "" : `<p class="help">Add accounts under Money › Bank accounts to pick one here.</p>`}</div>`;
   }
   return "";
 }
@@ -3244,6 +3284,7 @@ function familyTasks(sit){
     S.reg.retire.forEach(x => add("ret-" + x.id, "later", `Claim from ${x.fund || L().fund}`, [!L().nz && x.nomination && "Nomination: " + x.nomination, !L().nz && filled(x.nominee) && "To " + whoText(x.nominee), x.insurance === "yes" && "Ask about the insurance inside it"].filter(Boolean).join(" · "), nmOf(exec)));
     S.reg.policies.forEach(x => add("pol-" + x.id, "later", `Claim on the ${x.type || "insurance"} policy`, [x.insurer, filled(x.beneficiary) && "To " + whoText(x.beneficiary), x.where && "Document: " + x.where].filter(Boolean).join(" · "), nmOf(exec)));
     S.reg.assets.filter(x => filled(x.intendedFor)).forEach(x => add("ast-" + x.id, "later", `${x.what || "The asset"}: to ${whoText(x.intendedFor)}`, [x.ownership, x.notes].filter(Boolean).join(" · "), nmOf(exec)));
+    S.reg.points.forEach(x => add("pts-" + x.id, "later", `${x.what || x.type || "Points or voucher"}: ${pointsTodo(x)}`, pointsDetail(x).join("\n"), nmOf(exec)));
     if (S.reg.costs.length) { const n = k => S.reg.costs.filter(x => x.outcome === k).length; add("bills", "later", "Sort out the bills", `${n("Cancel")} to cancel, ${n("Transfer")} to hand on, ${n("Keep")} to keep for now. The list is in the executor’s list.`, nmOf(exec)); }
     S.reg.belongings.forEach(x => add("bel-" + x.id, "later", `Give ${x.item || "the item"} to ${whoText(x.forWhom) || "the chosen person"}`, [x.story, x.notes].filter(Boolean).join("\n"), nmOf(exec)));
   }
@@ -3257,9 +3298,9 @@ function planFacts(){
     (st.fields || []).forEach(fd => { if (fd.private || (fd.when && !fd.when(f))) return; const v = valText(ch, st, fd); if (v) push(`${ch.title} › ${fnv(st.title)}`, fnv(fd.label), v, `${ch.id}.${st.id}.${fd.k}`); });
   }));
   familyPeople().concat(S.reg.people.filter(p => (p.roles || []).includes("professional"))).forEach(p => push("Family › People", p.name, [p.rel, p.phone, (p.roles || []).filter(r => r !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · ")));
-  ["accounts","retire","policies","assets","debts","costs","docs","digital","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
-    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
-      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
+  ["accounts","retire","policies","assets","points","debts","costs","docs","digital","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
+    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
+      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
   Object.keys(WORDS).forEach(sec => WORDS[sec].items.forEach((it, i) => push("Letters and words › " + WORDS[sec].title, it.q, S.answers[wordsKey(sec, i)], wordsKey(sec, i))));
   return out;
 }
@@ -3687,7 +3728,7 @@ function executorDoc(){
     (ans("personal.keepdelete.delete") || []).length ? "Delete without reading: " + esc((ans("personal.keepdelete.delete") || []).map(v => optLabel("personal","keepdelete","delete",v)).join(", ")) + (holders("digital").length ? " (" + holders("digital").map(p => esc(p.name)).join(", ") + " is looking after this)" : "") + "." : "",
     ...S.reg.devices.map(x => `${esc(x.what || "Device")}: ${esc(({Keep:"keep it", Give:"give it to " + (x.giveTo || "the chosen person"), Wipe:"copy what matters, then wipe and recycle", Decide:"decide what to do"})[x.outcome] || "decide what to do")}.`),
     ...S.reg.belongings.map(x => `Give ${esc(x.item || "the item")} to ${esc(whoText(x.forWhom) || "the chosen person")}${x.story ? ", and tell them the story: " + esc(x.story) : "."}${x.notes ? " " + esc(x.notes) : ""}`),
-    ans("money.points.list") ? "Ask about transferring points and vouchers: " + esc(ans("money.points.list")) : "",
+    ...S.reg.points.map(x => `${esc(x.what || x.type || "Points or voucher")}: ${esc(pointsTodo(x))}.${pointsDetail(x).length ? " " + esc(pointsDetail(x).map(sentence).join(" ")) : ""}`),
     ans("money.owed.who") ? "Money owed to the estate: " + esc(ans("money.owed.who")) + (ans("money.owed.intent") === "forgive" ? " (their wish: forgive these loans)" : ans("money.owed.intent") === "repay" ? " (their wish: these should be repaid)" : "") : ""];
   return `<h1>Executor’s list</h1><p class="lead">A step-by-step list for whoever is looking after ${nm}’s affairs. Work through it at your own pace, and tick things off with whoever is helping.</p>
    <h2>The first few days</h2>${li(days)}<h2>The first few weeks</h2>${li(weeks)}
@@ -3859,7 +3900,7 @@ const ACT = {
   del(el){ ui.confirmDel = el.dataset.id; rerender(); },
   delno(){ ui.confirmDel = null; rerender(); },
   delyes(el){ const reg = el.dataset.reg, id = el.dataset.id; S.reg[reg] = S.reg[reg].filter(x => x.id !== id);
-    if (reg === "accounts") S.reg.costs.forEach(x => { if (x.paidFrom === id) x.paidFrom = ""; });
+    if (reg === "accounts") { S.reg.costs.forEach(x => { if (x.paidFrom === id) x.paidFrom = ""; }); S.reg.points.forEach(x => { if (x.linked === id) x.linked = ""; }); }
     if (reg === "people") S.reg.letters.forEach(x => { if (x.personId === id) x.personId = ""; });
     ui.open = null; ui.confirmDel = null; save(); rerender(); },
   unrole(el){ const p = S.reg.people.find(x => x.id === el.dataset.pid); if (p) p.roles = (p.roles || []).filter(q => q !== el.dataset.role); save(); rerender(); },

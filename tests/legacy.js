@@ -3,6 +3,7 @@
 localStorage.setItem('amfy-plan-v2', JSON.stringify({started:true, scanDone:true,
   settings:{name:"Lee", tone:"soft", faith:"neutral", country:"AU", region:"NSW", subject:"me", subjectName:""},
   scan:{retire:"yes", partner:"married"},
+  answers:{"money.points.list":"Qantas Frequent Flyer, Flybuys, a gift card in the kitchen drawer"},
   reg:{people:[{id:"p1", name:"Jo Smith", rel:"Wife", roles:[]}, {id:"p2", name:"Sam Smith", rel:"Son", roles:[]}],
        retire:[{id:"r1", fund:"HESTA", nomination:"Binding (non-lapsing)", nominee:"Jo 50%, Sam 30% and Mia 20%"}],
        belongings:[{id:"b1", item:"Ring", forWhom:"Jo & Sam"}],
@@ -27,6 +28,8 @@ check('blank insurance shares become 50/50',pcts(P.reg.policies[0].beneficiary)=
 check('old "Jo & Sam & Mia" asset becomes a third each',pcts(P.reg.assets[0].intendedFor)==='Jo 33.33, Sam 33.33, Mia 33.34',JSON.stringify(P.reg.assets[0].intendedFor));
 check('one person with no share gets 100%',pcts(P.reg.assets[1].intendedFor)==='Sam Smith 100',pcts(P.reg.assets[1].intendedFor));
 check('given shares are left as they were',P.reg.retire[0].nominee==='Jo 50%, Sam 30% and Mia 20%',JSON.stringify(P.reg.retire[0].nominee));
+check('old written points list becomes one card each',(P.reg.points||[]).map(x=>x.what+' ('+x.type+')').join(', ')==='Qantas Frequent Flyer (Frequent flyer), Flybuys (Loyalty points), A gift card in the kitchen drawer (Gift card)',JSON.stringify(P.reg.points));
+check('old written points list is not kept twice',!('money.points.list' in P.answers),JSON.stringify(P.answers));
 check('heirlooms have no shares added',P.reg.belongings[0].forWhom==='Jo & Sam',JSON.stringify(P.reg.belongings[0].forWhom));
 await go('personal','belongings');
 check('old "Jo & Sam" reads as two people',/for Jo and Sam/.test((all('.entry-sub')[0]||{}).textContent||''),(all('.entry-sub')[0]||{}).textContent);
