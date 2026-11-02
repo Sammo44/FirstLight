@@ -36,21 +36,34 @@ await jump(/^How should the letter feel/);click(all('[data-act=livpick]').find(b
 await jump(/^The last thing/);setv(ans(),'you made every day better');
 await jump(/^How would you like to sign it/);setv(ans(),'All my love, Dad');
 check('answers are kept with the letter',lt.iv_call==='Tommy'&&lt.iv_smile==='how you narrate everything to the dog'&&lt.iv_tone==='light');
-// Put together without Claude.
+await jump(/^What you already see in Tom/);setv(ans(),'Tom sticks up for kids who get left out');
+// Put together without Claude: composed, not stitched.
 await act('ldeep',{id:lt.id});
-const pv=((q('.lpreview blockquote')||{}).innerText||'');
-check('put together: their name, their words, their sign-off',/^Dear Tommy,/.test(pv)&&/There’s something you do that always makes me smile\. How you narrate everything to the dog\./.test(pv)&&/I want you to have Grandad’s watch\. It was Grandad’s/.test(pv)&&/All my love,\nDad$/.test(pv.trim()),JSON.stringify(pv.slice(0,200)));
-check('only context, not answers like the age, goes in as text',!/\b18\b/.test(pv));
+const pv=((q('.lpreview blockquote')||{}).innerText||'').trim();
+check('without Claude: an opening that fits the occasion and the tone',/^Dear Tommy,\n\nI asked for this letter to reach you on your 18th birthday\. Happy birthday\. I’ve never been much good at the soppy stuff, so bear with me\./.test(pv),JSON.stringify(pv.slice(0,200)));
+check('answers woven into sentences, said to them',/Something you do always makes me smile: how you narrate everything to the dog\. Even now, I can see it in you: you stick up for kids who get left out\./.test(pv),JSON.stringify(pv.slice(0,400)));
+check('a closing, and their sign-off',/And the last thing, the one I most want you to keep: you made every day better\.\n\nAll my love,\nDad$/.test(pv),JSON.stringify(pv.slice(-120)));
+check('no stitched “question. answer.” pairs',!/There’s something you do that always makes me smile\. How/.test(pv));
+check('only context, not answers like the age, goes in as text',!/about 18/.test(pv));
 check('nothing changes until you choose',!lt.body);
 await act('lprevuse',{id:lt.id,v:'replace'});
 check('use it as the letter',/^Dear Tommy,/.test(lt.body||'')&&!q('.lpreview'));
-// Written up by Claude.
-await act('ldeepai',{id:lt.id});for(let i=0;i<40&&!q('.lpreview');i++)await wait(20);
+// Before writing, Claude asks a few more questions from what's been said.
+check('offer of a few more questions',!!q('[data-act=lmoreq]'));
+await act('lmoreq',{id:lt.id});for(let i=0;i<40&&!(lt.ivx||[]).length;i++)await wait(20);await wait(40);
+check('the follow-up questions join the interview',(lt.ivx||[]).length===2&&title()==='What does the dog do while Tom narrates?'&&/A few more questions · stage 4 of 4/.test((q('.guide .qnav')||{}).textContent||''),title()+' | '+((q('.guide .qnav')||{}).textContent||'').slice(0,60));
+setv(ans(),'he just tilts his head, like he’s taking notes');
+// Written by Claude.
+await act('ldeepai',{id:lt.id,v:'new'});for(let i=0;i<40&&!q('.lpreview');i++)await wait(20);
 const gp=(window.__gprompts||[]).slice(-1)[0]||'';
-check('Claude gets the relationship, the context and the answers',/to their child, still young, Tom Morgan, whom they call "Tommy"/.test(gp)&&/about 18 when they read it/.test(gp)&&/right now as: close/.test(gp)&&/Tone: light, with some laughs/.test(gp)&&/Q: You’re leaving Grandad’s watch to Tom/.test(gp),gp.slice(0,300));
-check('and is told not to invent, and what to be careful with',/Don't invent memories/.test(gp)&&/Be careful with this: Don’t give them jobs/.test(gp)&&/end with their sign-off: "All my love, Dad"/.test(gp));
+check('Claude gets the relationship, the context and all the answers',/The letter is to their child, still young, Tom Morgan, whom they call "Tommy"/.test(gp)&&/about 18 when they read it/.test(gp)&&/right now as: close/.test(gp)&&/The feeling they want: light, with some laughs/.test(gp)&&/Q: You’re leaving Grandad’s watch to Tom/.test(gp)&&/Q: What does the dog do while Tom narrates\?\nA: he just tilts his head/.test(gp),gp.slice(0,300));
+check('and is asked to write, not stitch: thread, tense, creativity',/Don't follow the order of the notes/.test(gp)&&/Fix the tense, the person and the grammar/.test(gp)&&/Be creative with the writing/.test(gp)&&/Let their humour come through/.test(gp));
+check('while staying true, and careful for the relationship',/don't invent events, people, places, dates or promises/.test(gp)&&/Be careful with this: Don’t give them jobs/.test(gp)&&/end with their sign-off, "All my love, Dad"/.test(gp));
 check('a letter worth keeping gets the most careful writing',(window.__gopts||{}).modelTier==='complex');
-check('the draft is shown first',/A first draft, written from your answers/.test((q('.lpreview')||{}).textContent||'')&&!!q('[data-act=lprevuse][data-v=add]'));
+check('the letter is shown first, with ways to try again',/Your letter, written from your answers/.test((q('.lpreview')||{}).textContent||'')&&!!q('[data-act=lprevuse][data-v=add]')&&all('.lpreview [data-act=ldeepai]').map(b=>b.textContent).join('/')==='Another version/Shorter/Longer/Warmer/Lighter, with more humour/Simpler words');
+await act('ldeepai',{id:lt.id,v:'shorter'});for(let i=0;i<40&&(window.__gprompts||[]).length<3;i++)await wait(20);
+const gp2=(window.__gprompts||[]).slice(-1)[0]||'';
+check('“Shorter” rewrites the draft on screen',/Here is the draft you wrote before/.test(gp2)&&/Dear Tommy,\n\nYou narrate everything to the dog/.test(gp2)&&/Make it about half as long/.test(gp2),gp2.slice(-200));
 const before=lt.body;await act('lprevuse',{id:lt.id,v:'replace'});
 check('use it instead',/^Dear Tommy,\n\nYou narrate everything/.test(lt.body)&&lt.prevBody===before);
 await act('lundo',{id:lt.id});

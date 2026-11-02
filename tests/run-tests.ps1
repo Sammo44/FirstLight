@@ -32,13 +32,12 @@ $failed = 0
 
 if ($Only) { $SkipCrawl = $true }
 if (-not $SkipCrawl) {
-  # Each crawl runs in three parts: the test browser can stop part-way through a page with a couple of thousand clicks.
+  # Each crawl runs in four parts: the test browser can stop part-way through a page with more than about 1,100 clicks.
   $runs = @()
+  $cuts = @(0, 25, 50, 75, 999)
   foreach ($m in @(@('example',''), @('fresh',''), @('parent',''), @('ai',$mock2))) {
     $mode = if ($m[0] -eq 'ai') { 'example' } else { $m[0] }
-    $runs += ,@("crawl-$($m[0])-1", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=0;window.__SITTO=33;</script>")
-    $runs += ,@("crawl-$($m[0])-2", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=33;window.__SITTO=66;</script>")
-    $runs += ,@("crawl-$($m[0])-3", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=66;window.__SITTO=999;</script>")
+    for ($c = 0; $c -lt 4; $c++) { $runs += ,@("crawl-$($m[0])-$($c + 1)", $m[1], "<script>window.__SITMODE='$mode';window.__SITFROM=$($cuts[$c]);window.__SITTO=$($cuts[$c + 1]);</script>") }
   }
   foreach ($run in $runs) {
     $r = Run-Page $run[0] $run[1] ($run[2] + "<script src='sit.js'></script>") 'data-sit' 3000000
