@@ -616,7 +616,7 @@ const blank = () => ({v:2, started:false, example:false, scanDone:false,
   scan:{}, check:{}, answers:{}, status:{}, reg:blankReg(),
   release:{wait:"48", confirm:"2", checkin:"off", incapacity:"yes", review:"6"}, sug:{}, vault:null, customTypes:{}, customCats:[], billSetup:null, notBills:[], reviewedAt:0, updatedAt:0});
 let S = blank();
-const ui = {view:"welcome", chapter:null, step:0, open:null, confirmDel:null, navOpen:false, scanPage:0, wtab:"letters", otab:"hospital", lguide:{}, wq:{}, wmode:{}, follow:{}, gq:{}, gbusy:{}, liv:{}, lprev:{}, lbusy:{}, lq:{},
+const ui = {view:"welcome", chapter:null, step:0, open:null, confirmDel:null, navOpen:false, scanPage:0, wtab:"letters", otab:"hospital", lguide:{}, wq:{}, wmode:{}, follow:{}, gq:{}, gbusy:{}, liv:{}, lprev:{}, lbusy:{}, lq:{}, lopt:{},
   sugOpen:null, fuHide:new Set(), confirmReset:false, ess:null, checkDone:false,
   find:{state:"idle", items:[], msg:"", src:""}, photo:null, pasteText:"", ai:{ok:false, images:false}, openDet:{}, billStep:null, txOpen:new Set(), moreTypes:new Set(),
   bFile:new Set(), bMore:new Set(), bqEdit:new Set(), bCat:{}, allOpts:new Set(), entryMore:new Set(), scanMore:false, restore:null};
@@ -2154,19 +2154,37 @@ function toYou(v, first){
 const lcap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const lclean = v => String(v || "").trim().replace(/\s+/g, " ").replace(/[.!?]+$/, "");
 const lsoft = v => /^(You|Your|It|It’s|It's|We|That|There|The|A|An|My|Our)\b/.test(v) ? v.charAt(0).toLowerCase() + v.slice(1) : v;
-function lsentence(x, raw, first){
+// Other ways to say the same thing, so "Another version" reads differently. {A} starts a sentence; {a} sits inside one.
+const LTPL_ALT = {met:["Do you remember how we met? {A}.","It all started with {a}."], relive:["Of all our moments, the one I’d live again is {a}.","If I could have one moment back, I’d choose {a}."],
+  ordinary:["What I loved most were the ordinary days: {a}."], noticed:["You probably didn’t know I noticed {a}. I did, and I loved it."], smile:["You always make me smile with {a}."],
+  memory:["One moment keeps coming back to me: {a}."], small:["One memory keeps coming back to me: {a}."], thanks:["I never properly thanked you for {a}, so thank you."], hardday:["When it gets hard, remember this: {a}."],
+  proud:["I’m so proud of {a}."], together:["My favourite times with you are {a}."], see:["I can already see it in you: {a}."], learned:["If I’ve learned anything, it’s this: {a}."],
+  admire:["I’ve always quietly admired {a}."], gave:["You gave me {a}. I’ve carried it with me all my life."], best:["Some of my best memories are with you: {a}."], doubt:["Whatever else happens, never doubt this: {a}."],
+  through:["Together, we got through {a}."], changed:["Because of you, I changed: {a}."], taught:["You’ve taught me so much, like {a}."], arrived:["The day you arrived is one I’ll never forget: {a}."]};
+const lfits = t => /(: |\. |\? )\{[aA]\}/.test(t);
+const lhash = s => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+// The first version uses the first wording. Later versions move through the others: the opening and closing always change.
+const lpick = (arr, seed, salt) => !seed ? arr[0] : salt === "open" || salt === "close" ? arr[seed % arr.length] : arr[(seed + lhash(salt)) % arr.length];
+function lsentence(x, raw, first, seed){
   let v = toYou(lclean(raw), first); if (!v) return "";
-  const tpl = LTPL[x.id], clause = L_CLAUSE.test(v);
+  const clause = L_CLAUSE.test(v), all = [LTPL[x.id]].concat(LTPL_ALT[x.id] || []).filter(Boolean);
+  let tpl = all.length ? lpick(all, seed || 0, x.id) : null;
+  if (tpl && clause && !lfits(tpl)) tpl = all.find(lfits) || null;
+  if (tpl && x.id !== "free" && x.id !== "knew" && x.id !== "belong") return tpl.replace("{A}", lcap(v)).replace("{a}", lsoft(v));
   if (x.id === "hope") return /^(that|you|your)\b/i.test(v) ? `I hope ${lsoft(v)}.` : `I hope for ${lsoft(v)}.`;
   if (x.id === "wish") return /^(that|i|we|you)\b/i.test(v) ? `I wish ${v.replace(/^I\b/, "I")}.` : `I wish things had been different: ${lsoft(v)}.`;
   if (x.id === "self" || x.id === "lookafter") return L_VERB.test(v) ? `Please ${lsoft(v)}.` : `${x.lead} ${lcap(v)}.`;
   if (x.id === "free" && !L_VERB.test(v.replace(/^to\s+/i, ""))) return `You have my blessing, completely. ${lcap(v)}.`;
   if (x.id === "free") return `You have my blessing to ${lsoft(v.replace(/^to\s+/i, ""))}.`;
   if ((x.id === "knew" || x.id === "belong") && !LWHEN.test(v)) return `${x.lead} ${lcap(v)}.`;
-  // A phrase fits inside its sentence. A full sentence only fits after a colon; otherwise it follows a lead-in.
-  if (tpl && (!clause || /: \{a\}\.$/.test(tpl))) return tpl.replace("{a}", lsoft(v));
+  if (tpl) return tpl.replace("{A}", lcap(v)).replace("{a}", lsoft(v));
   return (x.lead ? x.lead + " " : "") + lcap(v) + ".";
 }
+const LOPEN = {light:["I’ve never been much good at the soppy stuff, so bear with me.","Fair warning: this is the mushy one. Bear with me.","I’m better at jokes than at this sort of thing, but here goes."],
+  tender:["There are things I want you to have in writing, so you can come back to them whenever you need to.","I wanted to put some things down for you, so you’ll always have them.","I’ve been thinking about what I most want you to know."],
+  plain:["I want to tell you a few things plainly, so there’s never any doubt.","I’ll keep this simple, because it matters."],
+  mix:["I’ve been wanting to write this for a while.","There’s a lot I want to say, so I’m going to start and see where it goes."]};
+const LCLOSE = ["And the last thing, the one I most want you to keep: {a}.","If you remember one thing from this letter, let it be this: {a}.","Most of all: {a}."];
 // The occasion it's delivered on, said to them.
 function lOccasion(lt){
   if (lt.deliver === "date" && lt.date) { const s2 = shortDate(lt.date); return s2 ? `on ${s2}` : ""; }
@@ -2175,30 +2193,33 @@ function lOccasion(lt){
   const lo = o.charAt(0).toLowerCase() + o.slice(1);
   return /^(when|a |at |in |on |after )/i.test(lo) ? lo : /^the first/i.test(lo) ? "at " + lo : "on " + lo;
 }
-function letterFromAnswers(lt){
+// o.seed picks other wordings ("Another version"); o.tone overrides the feeling; o.short keeps the strongest parts.
+function letterFromAnswers(lt, o){
+  o = o || {}; const seed = o.seed || 0;
   const first = letterFirst(lt), call = String(lt.iv_call || "").trim() || (first === "them" ? "" : first), rel = lt.rel || "other";
   const flat = letterQsFlat(lt), got = x => filled(lt["iv_" + x.id]) ? lt["iv_" + x.id] : "";
   const story = flat.filter(x => x.si === 1 && got(x)), more = flat.filter(x => x.more && got(x)), mean = flat.filter(x => x.si === 2 && !x.sign && x.id !== "last" && x.id !== "noreply" && got(x));
   const last = flat.find(x => (x.id === "last" || x.id === "noreply") && got(x));
   if (!story.length && !mean.length && !more.length && !last) return "";
   // Opening: when it reaches them, how things are between them, and how it should feel.
-  const open = [], occ = lOccasion(lt), tone = lt.iv_tone || ({jokes:"light", words:"tender"})[lt.iv_love] || "mix";
+  const open = [], occ = lOccasion(lt), tone = o.tone || lt.iv_tone || ({jokes:"light", words:"tender"})[lt.iv_love] || "mix";
   if (occ) open.push(`I asked for this letter to reach you ${occ}.${/birthday/i.test(occ) ? " Happy birthday." : /wedding/i.test(occ) ? " I wish I could be there." : ""}`);
   if (filled(lt.iv_age) && /^\d+$/.test(String(lt.iv_age).trim()) && !/birthday/i.test(occ)) open.push(`By the time you read this, you’ll be about ${String(lt.iv_age).trim()}.`);
   const now = rel === "drifted" ? "complicated" : lt.iv_now;
   open.push(now === "unsaid" ? "We were never big on saying these things out loud, you and me, so I’m putting them in writing."
     : now === "complicated" ? "I know things haven’t always been easy between us. I wanted to write to you anyway."
     : now === "distant" ? "We haven’t been close for a while, and I’m sorry for that. But I wanted you to have this."
-    : ({light:"I’ve never been much good at the soppy stuff, so bear with me.", tender:"There are things I want you to have in writing, so you can come back to them whenever you need to.",
-       plain:"I want to tell you a few things plainly, so there’s never any doubt.", mix:"I’ve been wanting to write this for a while."})[tone]);
+    : lpick(LOPEN[tone] || LOPEN.mix, seed, "open"));
   const hard = lclean(toYou(lt.iv_hard || "", first));
-  if (hard) open.push(L_CLAUSE.test(hard) ? `I know this will be hard. ${lcap(hard)}, and I wish I could change that.` : `I know ${lsoft(hard)} will be hard, and I wish I could change that.`);
+  if (hard && !o.short) open.push(L_CLAUSE.test(hard) ? `I know this will be hard. ${lcap(hard)}, and I wish I could change that.` : `I know ${lsoft(hard)} will be hard${seed % 2 ? ". I’m sorry for that part" : ", and I wish I could change that"}.`);
   // Story and meaning, two thoughts to a paragraph so it reads as a letter rather than a list.
   const pair = l => { const out = []; for (let i = 0; i < l.length; i += 2) out.push(l.slice(i, i + 2).join(" ")); return out; };
-  const storyS = story.concat(more).map(x => lsentence(x, got(x), first)).filter(Boolean);
-  const meanS = mean.map(x => lsentence(x, got(x), first)).filter(Boolean);
+  // Shorter: the two memories and two meanings with the most said about them.
+  const keepBest = (l, n) => o.short ? l.map((x, i) => [x, i, String(got(x)).length]).sort((p2, q2) => q2[2] - p2[2]).slice(0, n).sort((p2, q2) => p2[1] - q2[1]).map(y => y[0]) : l;
+  const storyS = keepBest(story.concat(more), 2).map(x => lsentence(x, got(x), first, seed)).filter(Boolean);
+  const meanS = keepBest(mean, 2).map(x => lsentence(x, got(x), first, seed)).filter(Boolean);
   const paras = [open.join(" ")].concat(pair(storyS), pair(meanS));
-  if (last) { const v = lclean(toYou(got(last), first)); paras.push(last.id === "noreply" ? lcap(v) + "." : storyS.length + meanS.length ? `And the last thing, the one I most want you to keep: ${lsoft(v)}.` : lcap(v) + "."); }
+  if (last) { const v = lclean(toYou(got(last), first)); paras.push(last.id === "noreply" ? lcap(v) + "." : storyS.length + meanS.length ? lpick(LCLOSE, seed, "close").replace("{a}", lsoft(v)) : lcap(v) + "."); }
   const sign = String(lt.iv_sign || "").trim();
   return `Dear ${call || "you"},\n\n` + paras.filter(Boolean).join("\n\n") + (sign ? "\n\n" + sign.replace(/,\s*/, ",\n") : "");
 }
@@ -2212,7 +2233,8 @@ function letterTalkHTML(lt){
     : `<textarea id="liv_${lt.id}" rows="${x.ctx || x.sign ? 1 : 3}" data-b="${esc(b)}" data-coach="${esc(ckey)}" data-assist="g" aria-label="${esc(lqText(x, lt))}" placeholder="${x.ex ? "e.g. " + esc(x.ex) : "Take your time."}">${esc(val || "")}</textarea>
        <div class="assist" id="as_liv_${lt.id}"></div>${x.ctx || x.sign ? "" : `<div class="coachbox" id="co_liv_${lt.id}">${coachHTML(val, ckey)}</div>`}`;
   const prev = ui.lprev[lt.id], busy = ui.lbusy[lt.id];
-  const again = prev && prev.from === "claude" && ui.ai.ok ? `<div class="stack" style="gap:6px"><span class="small muted">Not quite right? Ask for another go:</span><div class="chips">${LREDO.map(([v, lab]) => `<button type="button" class="chip" data-act="ldeepai" data-id="${lt.id}" data-v="${v}"${busy ? " disabled" : ""}>${busy === v ? "Rewriting…" : esc(lab)}</button>`).join("")}</div></div>` : "";
+  const again = !prev ? "" : prev.from === "claude" && ui.ai.ok ? `<div class="stack" style="gap:6px"><span class="small muted">Not quite right? Ask for another go:</span><div class="chips">${LREDO.map(([v, lab]) => `<button type="button" class="chip" data-act="ldeepai" data-id="${lt.id}" data-v="${v}"${busy ? " disabled" : ""}>${busy === v ? "Rewriting…" : esc(lab)}</button>`).join("")}</div></div>`
+    : prev.from === "answers" ? `<div class="stack" style="gap:6px"><span class="small muted">Not quite right? Try another way:</span><div class="chips">${LREDO_OFF.map(([v, lab]) => `<button type="button" class="chip" data-act="ldeep" data-id="${lt.id}" data-v="${v}">${esc(lab)}</button>`).join("")}</div></div>` : "";
   const preview = prev ? `<div class="lpreview stack"><span class="eyebrow">${prev.from === "claude" ? "Your letter, written from your answers" : "Your answers, put together as a letter"}</span>
       <blockquote class="example">${esc(prev.text).replace(/\n/g, "<br>")}</blockquote>${again}
       <div class="row"><button type="button" class="btn sm primary" data-act="lprevuse" data-id="${lt.id}" data-v="replace">${filled(lt.body) ? "Use this instead of what I’ve written" : "Use this as my letter"}</button>${filled(lt.body) ? `<button type="button" class="btn sm" data-act="lprevuse" data-id="${lt.id}" data-v="add">Add it below what I’ve written</button>` : ""}<button type="button" class="btn sm ghost" data-act="lprevdrop" data-id="${lt.id}">Not this one</button></div>
@@ -2222,15 +2244,34 @@ function letterTalkHTML(lt){
     <div class="stack" style="gap:8px"><h3 class="qtitle">${esc(lqText(x, lt))}</h3>${answer}</div>
     <div class="row between">${i > 0 ? `<button type="button" class="btn sm ghost" data-act="livgo" data-id="${lt.id}" data-v="${i - 1}">‹ Back</button>` : "<span></span>"}${i < n - 1 ? `<button type="button" class="btn sm" data-act="livgo" data-id="${lt.id}" data-v="${i + 1}">${filled(val) ? "Next question ›" : "Skip this one ›"}</button>` : ""}</div>
     ${letterBringHTML(lt, qs, answered, busy)}
-    ${preview}`;
+    ${preview}
+    ${lvers(lt).length ? `<p class="small">Changed your mind? <button type="button" class="linkbtn" data-act="lrestore" data-id="${lt.id}" data-i="0">Bring back what you had before</button></p>` : ""}`;
 }
 const LREDO = [["again","Another version"],["shorter","Shorter"],["longer","Longer"],["warmer","Warmer"],["lighter","Lighter, with more humour"],["simpler","Simpler words"]];
+// Earlier versions of a letter, newest first. A letter from before this was added keeps its one earlier version.
+function lvers(lt){
+  if (lt.prevBody != null) { lt.versions = (filled(lt.prevBody) ? [{t:Date.now(), text:lt.prevBody, why:"Earlier version"}] : []).concat(lt.versions || []); delete lt.prevBody; }
+  if (!Array.isArray(lt.versions)) lt.versions = [];
+  return lt.versions;
+}
+function letterKeep(lt, why){ const vs = lvers(lt); if (filled(lt.body) && (!vs[0] || vs[0].text !== lt.body)) { vs.unshift({t:Date.now(), text:lt.body, why}); lt.versions = vs.slice(0, 12); } }
+function letterVersionsHTML(lt){
+  const vs = lvers(lt); if (!vs.length) return "";
+  const when = t => { const dt = new Date(t); return dt.toLocaleDateString("en-AU", {day:"numeric", month:"short"}) + ", " + dt.toLocaleTimeString("en-AU", {hour:"numeric", minute:"2-digit"}); };
+  return `<details class="fsec-d"${det("lver:" + lt.id, false)}><summary class="fsec">Earlier versions (${vs.length})</summary>
+    <div class="gparts">${vs.map((v, i) => `<div class="gpart"><div class="stack" style="gap:2px"><strong>${esc(when(v.t))}</strong><span class="small muted">${esc(v.why || "")} · “${esc(String(v.text).replace(/\s+/g, " ").slice(0, 90))}${String(v.text).length > 90 ? "…" : ""}”</span></div>
+      <button type="button" class="btn sm" data-act="lrestore" data-id="${lt.id}" data-i="${i}">Bring this back</button></div>`).join("")}</div></details>`;
+}
+const LREDO_OFF = [["again","Another version"],["shorter","Shorter"],["warmer","Warmer"],["lighter","Lighter"],["plainer","Plainer"]];
+// Why Claude can't write here: a copy outside Claude (like GitHub Pages), or a Claude view that doesn't offer it.
+const aiWhyNot = () => !window.claude || !window.claude.use ? "This copy of FirstLight isn’t running inside Claude (for example, the copy on GitHub Pages), so Claude can’t write the letter here."
+  : "Claude isn’t connected in this view, so it can’t write the letter here.";
 function letterBringHTML(lt, qs, answered, busy){
   if (!answered) return "";
   const storyN = qs.filter(y => !y.ctx && !y.sign && filled(lt["iv_" + y.id])).length;
   if (!ui.ai.ok) return `<div class="stack lbring" style="gap:8px"><span class="label">When you’re ready</span>
-    <div class="row"><button type="button" class="btn sm primary" data-act="ldeep" data-id="${lt.id}">Put my answers into a letter</button></div>
-    <p class="small muted">Open your plan in Claude, and the letter can be written for you, in your voice, from these same answers.</p></div>`;
+    <div class="note">${esc(aiWhyNot())} Your answers are put together into a letter on this device instead. To have Claude write it for you, with follow-up questions and rewrites, open your FirstLight artifact on claude.ai.</div>
+    <div class="row"><button type="button" class="btn sm primary" data-act="ldeep" data-id="${lt.id}">Put my answers into a letter</button></div></div>`;
   return `<div class="stack lbring" style="gap:8px"><span class="label">When you’re ready</span>
     <p class="help">Claude reads everything you’ve said and writes the letter: it finds the thread that runs through your answers, puts them in the right tense, and writes it the way you’d want to say it. It only uses what you’ve told it.</p>
     <div class="row"><button type="button" class="btn sm primary" data-act="ldeepai" data-id="${lt.id}" data-v="new"${busy ? " disabled" : ""}>${busy === "new" ? "Writing your letter…" : "Write my letter"}</button>
@@ -4378,7 +4419,7 @@ function wordsHTML(){
           ${lt.personId ? "" : inputHTML(b("name"), t("name","Their name"), lt.name)}</div>
         <div class="field"><span class="label">Who are they to you?</span>${chipsHTML(b("rel"), LETTER_REL, lt.rel, false)}</div>
         ${letterGuideHTML(lt, who)}
-        <div class="field"><label for="lb_${lt.id}">Your letter</label><textarea class="letter" id="lb_${lt.id}" data-b="${b("body")}" data-assist="g" data-coach="letter:${lt.id}" placeholder="Dear ${esc(who)},">${esc(lt.body || "")}</textarea><div class="assist" id="as_lb_${lt.id}"></div><div class="coachbox" id="co_lb_${lt.id}">${coachHTML(lt.body, "letter:" + lt.id)}</div>${lt.prevBody != null ? `<p class="small"><button type="button" class="linkbtn" data-act="lundo" data-id="${lt.id}">Bring back my earlier version</button></p>` : ""}</div>
+        <div class="field"><label for="lb_${lt.id}">Your letter</label><textarea class="letter" id="lb_${lt.id}" data-b="${b("body")}" data-assist="g" data-coach="letter:${lt.id}" placeholder="Dear ${esc(who)},">${esc(lt.body || "")}</textarea><div class="assist" id="as_lb_${lt.id}"></div><div class="coachbox" id="co_lb_${lt.id}">${coachHTML(lt.body, "letter:" + lt.id)}</div>${letterVersionsHTML(lt)}</div>
         <div class="field"><span class="label">When should they receive it?</span>${chipsHTML(b("deliver"), [["release","When the plan is released"],["date","On a particular date"],["occasion","On an occasion"]], lt.deliver || "release", false)}</div>
         ${lt.deliver === "date" ? inputHTML(b("date"), d("date","Date"), lt.date) : ""}
         ${lt.deliver === "occasion" ? `<div class="chips">${occ.map(o => `<button class="chip${lt.occasion === o ? " on" : ""}" aria-pressed="${lt.occasion === o}" data-act="locc" data-id="${lt.id}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>` + inputHTML(b("occasion"), t("occasion","Which occasion?",{ph:"e.g. Their 18th birthday, their wedding day"}), lt.occasion) : ""}
@@ -4961,7 +5002,12 @@ Use Australian English. Reply only with JSON: {"question":"...","starter":"..."}
     lt[k] = lt[k] === el.dataset.v ? "" : el.dataset.v; touched(); save();
     if (lt[k]) ui.liv[lt.id] = Math.min((ui.liv[lt.id] || 0) + 1, letterQsFlat(lt).length - 1);
     rerender(); },
-  ldeep(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt) return; const txt = letterFromAnswers(lt);
+  // Put the answers together on this device. Another version, shorter, warmer, lighter or plainer each make a new draft.
+  ldeep(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt) return;
+    const v = el.dataset.v || "new", cur = ui.lopt[lt.id] || {seed:0};
+    const opt = v === "again" ? Object.assign({}, cur, {seed:(cur.seed || 0) + 1}) : v === "shorter" ? Object.assign({}, cur, {short:true})
+      : ({warmer:"tender", lighter:"light", plainer:"plain"})[v] ? Object.assign({}, cur, {tone:({warmer:"tender", lighter:"light", plainer:"plain"})[v]}) : {seed:0};
+    ui.lopt[lt.id] = opt; const txt = letterFromAnswers(lt, opt);
     if (!txt) { toast("Answer at least one of the questions about your story first"); return; }
     ui.lprev[lt.id] = {text:txt, from:"answers"}; rerender(); const pv = document.querySelector(".lpreview"); if (pv) pv.scrollIntoView({block:"center"}); },
   async ldeepai(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt || !sampleFn || ui.lbusy[lt.id]) return;
@@ -5018,10 +5064,14 @@ Reply only with JSON: {"questions":["...","..."]}`, {modelTier:"default"});
     } catch(e) { toast(e && e.code === "not_granted" ? "This needs permission to use Claude." : "Couldn’t think of questions just now. You can write your letter anyway."); }
     delete ui.lq[lt.id]; rerender(); const ta = document.getElementById("liv_" + lt.id); if (ta) focusEnd(ta); },
   lprevuse(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id), pv = lt && ui.lprev[lt.id]; if (!pv) return;
-    lt.prevBody = lt.body || ""; lt.body = el.dataset.v === "add" && filled(lt.body) ? lt.body.replace(/\s*$/, "") + "\n\n" + pv.text : pv.text;
-    delete ui.lprev[lt.id]; touched(); save(); rerender(); focusLetter(lt.id); toast("It’s in your letter. Change anything that doesn’t sound like you."); },
+    letterKeep(lt, el.dataset.v === "add" ? "Before a draft was added" : "Before a draft replaced it");
+    lt.body = el.dataset.v === "add" && filled(lt.body) ? lt.body.replace(/\s*$/, "") + "\n\n" + pv.text : pv.text;
+    delete ui.lprev[lt.id]; touched(); save(); rerender(); focusLetter(lt.id); toast("It’s in your letter. What you had before is kept under Earlier versions."); },
   lprevdrop(el){ delete ui.lprev[el.dataset.id]; rerender(); },
-  lundo(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt || lt.prevBody == null) return; const cur = lt.body; lt.body = lt.prevBody; lt.prevBody = cur; touched(); save(); rerender(); focusLetter(lt.id); toast("Your earlier version is back. Tap again to swap back."); },
+  // Bring back an earlier version. The letter on screen is kept too, so nothing is ever lost.
+  lrestore(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt) return; const vs = lvers(lt), i = +el.dataset.i || 0, v = vs[i]; if (!v) return;
+    vs.splice(i, 1); if (filled(lt.body)) vs.unshift({t:Date.now(), text:lt.body, why:"Swapped for an earlier version"}); lt.versions = vs.slice(0, 12); lt.body = v.text;
+    touched(); save(); rerender(); focusLetter(lt.id); toast("Your earlier version is back. The one you swapped out is under Earlier versions."); },
   locc(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt) return; lt.occasion = el.dataset.v; touched(); save(); rerender(); },
   ldraft(el){ const lt = S.reg.letters.find(x => x.id === el.dataset.id); if (!lt) return;
     const p = S.reg.people.find(x => x.id === lt.personId), who = p ? p.name.split(" ")[0] : (lt.name || "you"), add = letterDraft(lt, who);

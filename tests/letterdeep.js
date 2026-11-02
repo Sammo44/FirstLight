@@ -65,9 +65,10 @@ await act('ldeepai',{id:lt.id,v:'shorter'});for(let i=0;i<40&&(window.__gprompts
 const gp2=(window.__gprompts||[]).slice(-1)[0]||'';
 check('“Shorter” rewrites the draft on screen',/Here is the draft you wrote before/.test(gp2)&&/Dear Tommy,\n\nYou narrate everything to the dog/.test(gp2)&&/Make it about half as long/.test(gp2),gp2.slice(-200));
 const before=lt.body;await act('lprevuse',{id:lt.id,v:'replace'});
-check('use it instead',/^Dear Tommy,\n\nYou narrate everything/.test(lt.body)&&lt.prevBody===before);
-await act('lundo',{id:lt.id});
-check('the earlier version can be brought back',lt.body===before);
+check('use it instead, keeping what was there',/^Dear Tommy,\n\nYou narrate everything/.test(lt.body)&&lt.versions[0].text===before);
+check('a way back, right there',!!q('.guide [data-act=lrestore][data-i="0"]')&&/Earlier versions \(1\)/.test((q('details[data-keep="lver:'+lt.id+'"] summary')||{}).textContent||''));
+const claudeDraft=lt.body;await act('lrestore',{id:lt.id,i:'0'});
+check('the earlier version can be brought back, and the other is kept',lt.body===before&&lt.versions[0].text===claudeDraft);
 // A partner, with jobs in the plan.
 click(all('[data-act=newletter]').find(b=>/Jo Morgan/.test(b.textContent)));await wait(50);
 const jo=P().reg.letters[P().reg.letters.length-1];
