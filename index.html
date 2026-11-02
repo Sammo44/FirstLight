@@ -706,7 +706,8 @@ const samePerson = (x, y) => { const a2 = lc(String(x || "").trim()), b2 = lc(St
   return a2 === b2 || (!a2.includes(" ") && b2.split(" ")[0] === a2) || (!b2.includes(" ") && a2.split(" ")[0] === b2); };
 // Everyone the plan already knows about: the people list first, then names typed into other people fields.
 function knownNames(pros){
-  const out = [], addN = n => { n = String(n || "").trim(); if (n && !out.some(o => samePerson(o, n))) out.push(n); };
+  // "My estate" is a choice in beneficiary fields, not a person, so it isn't offered anywhere else.
+  const out = [], addN = n => { n = String(n || "").trim(); if (n && !/^my estate$/i.test(n) && !out.some(o => samePerson(o, n))) out.push(n); };
   S.reg.people.filter(q => pros || !(q.roles || []).includes("professional")).forEach(q => addN(q.name));
   Object.keys(REG).forEach(rg => { const fs = REG[rg].fields().filter(f => f.type === "people" && !f.pros);
     if (fs.length) (S.reg[rg] || []).forEach(it => fs.forEach(f => f.one ? addN(typeof it[f.k] === "string" ? it[f.k] : "") : plist(it[f.k]).forEach(x => addN(x.name)))); });
@@ -2136,11 +2137,23 @@ const OUT_WORD = {Cancel:"Cancel it", Keep:"Keep paying", Transfer:"Hand on", De
 function swipeDecide(v, to){
   const sw = ui.swipe, it = sw && S.reg.costs.find(x => x.id === sw.queue[sw.i]); if (!it || !OUT_WORD[v]) return;
   it.outcome = v; if (v === "Transfer") it.transferTo = to || it.transferTo || "";
+  const newDefault = v === "Transfer" && filled(it.transferTo) && !samePerson(S.billTo, it.transferTo);
+  if (newDefault) S.billTo = it.transferTo;
   sw.done.push({id:it.id, o:v}); ui.bFile.delete(it.id); ui.bqEdit.delete(it.id);
   if (sw.single) ui.swipe = null; else sw.i++;
   touched(); save(); rerender();
-  toast(`${billName(it)}: ${v === "Transfer" && it.transferTo ? "hand it to " + it.transferTo : OUT_WORD[v].toLowerCase()}`);
+  toast(`${billName(it)}: ${v === "Transfer" && it.transferTo ? "hand it to " + it.transferTo + (newDefault ? ". Bills now go to " + handName(it.transferTo) + " by default" : "") : OUT_WORD[v].toLowerCase()}`);
 }
+// A name on a hand-over button: people in the plan by first name. Typed names, couples, names like "Uncle Bob" or
+// "Dr Lee", and first names two people share stay whole.
+function handName(n, names){
+  const f = firstName(n), all2 = names || knownNames(false);
+  return !S.reg.people.some(p => lc(String(p.name || "").trim()) === lc(String(n).trim())) || /\s(and|&)\s/i.test(n)
+    || /^(aunty|auntie|aunt|uncle|nan|nana|nanna|nanny|grandma|grandpa|gran|pop|poppy|mum|mom|dad|dr|mr|mrs|ms|miss|sir|the)$/i.test(f)
+    || all2.filter(o => lc(firstName(o)) === lc(f)).length > 1 ? n : f;
+}
+// The person bills are handed to by default: whoever the last bill was handed to, while they're still in the plan.
+const billToDefault = names => filled(S.billTo) ? (names || knownNames(false)).find(n => samePerson(n, S.billTo)) || "" : "";
 // The quick view: one sentence about what keeps charging, then decide them one card at a time.
 function billsQuickHTML(){
   const sw = ui.swipe, fd = ui.find;
@@ -2201,14 +2214,15 @@ function swipeHTML(){
   if (!it) { sw.i++; return billsQuickHTML(); }
   const t2 = typeOf(it), seen = (it.seen || []).slice(0, 3), fmt = s => { const [y, m2, d2] = s.split("-"); return new Date(+y, m2 - 1, +d2).toLocaleDateString("en-AU", {day:"numeric", month:"short"}); };
   // Anyone in the plan can take a bill on, or someone new. Names show by first name unless two people share it.
-  const names2 = knownNames(false), main = mainPersonObj(), mainName = main ? main.name : (names2[0] || "");
-  const short = n => { const f = firstName(n); return /\s(and|&)\s/i.test(n) || names2.filter(o => lc(firstName(o)) === lc(f)).length > 1 ? n : f; };
+  // The big button is whoever this bill already goes to, or else whoever the last bill went to, or else the main person.
+  const names2 = knownNames(false), main = mainPersonObj();
   const cur = it.outcome || "", curTo = cur === "Transfer" ? String(it.transferTo || "") : "";
+  const mainName = curTo || billToDefault(names2) || (main ? main.name : (names2[0] || ""));
+  const short = n => handName(n, names2);
   const on = (v, to) => cur === v && (v !== "Transfer" || (to ? samePerson(curTo, to) : !curTo));
   const btn = (v, lab, cls, to) => `<button class="btn bqa${cls || ""}${on(v, to) ? " on" : ""}" aria-pressed="${on(v, to)}" data-act="swipeset" data-v="${v}"${to ? ` data-to="${esc(to)}"` : ""}>${on(v, to) ? "✓ " : ""}${esc(lab)}</button>`;
   const chip = (v, lab, to) => `<button class="chip${on(v, to) ? " on" : ""}" aria-pressed="${on(v, to)}" data-act="swipeset" data-v="${v}"${to ? ` data-to="${esc(to)}"` : ""}>${on(v, to) ? "✓ " : ""}${esc(lab)}</button>`;
   const others = names2.filter(n => !samePerson(n, mainName));
-  if (curTo && !samePerson(curTo, mainName) && !others.some(n => samePerson(n, curTo))) others.unshift(curTo);
   const editing = ui.bqEdit.has(it.id), one = !!sw.single;
   const intro = sw.intro && sw.i === 0 ? `<div class="bq-intro"><h3>${S.reg.costs.length} things keep charging you, about ${money(costsTotal())} a month.</h3>
       <p class="muted">${sw.intro.skipped ? `I left out ${sw.intro.skipped} that look like one-offs or have stopped (Fine-tune shows them). ` : ""}Let’s go through the ${sw.queue.length} without a decision, biggest first. Tap Edit on any card to change its name, amount or how often.</p></div>` : "";
@@ -3919,7 +3933,9 @@ const ACT = {
     if (el.dataset.one) setB(el.dataset.b, name); else addPerson(el.dataset.b, name, el.dataset.split);
     touched(); save(); rerender(); },
   prm(el){ const b = el.dataset.b, l = plist(getB(b)), was = isEven(l); l.splice(+el.dataset.i, 1); if (el.dataset.split && l.length) reshare(l, was); setB(b, l); touched(); save(); rerender(); },
-  pone(el){ const b = el.dataset.b, v = el.dataset.v; setB(b, samePerson(getB(b), v) ? "" : v); touched(); save(); rerender(); },
+  pone(el){ const b = el.dataset.b, v = el.dataset.v, nv = samePerson(getB(b), v) ? "" : v; setB(b, nv);
+    if (nv && /^r\|costs\|[^|]+\|transferTo$/.test(b)) S.billTo = nv;   // the person picked last becomes the default for the next bill
+    touched(); save(); rerender(); },
   roleadd(el){ const p = S.reg.people.find(x => x.id === el.dataset.pid); if (p && !(p.roles || []).includes(el.dataset.role)) { p.roles = (p.roles || []).concat(el.dataset.role); touched(); save(); rerender(); } },
   moreopts(el){ ui.allOpts.add(el.dataset.b); rerender(); },
   entrymore(el){ ui.entryMore.add(el.dataset.id); rerender(); },
