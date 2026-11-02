@@ -63,6 +63,8 @@ $suites = @(@('regression','', "<script src='harness2.js'></script>", 'data-test
             @('pms', '', "<script src='pms.js'></script>", 'data-r'),
             @('govs', '', "<script src='govs.js'></script>", 'data-r'),
             @('vault', '', "<script src='vault.js'></script>", 'data-r'),
+            @('guides', "<script src='mockguide.js'></script>", "<script src='guides.js'></script>", 'data-r'),
+            @('letterdeep', "<script src='mockguide.js'></script>", "<script src='letterdeep.js'></script>", 'data-r'),
             @('finder', '', "<script src='finder.js'></script>", 'data-r'))
 if (Test-Path $fixture) { $suites += ,@('bills', '', "<script src='statements.js'></script><script src='bq.js'></script>", 'data-r') }
 else { "bills          skipped: add tests/fixtures/statements.js to run it" }
