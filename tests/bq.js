@@ -1,5 +1,7 @@
 window.addEventListener('error',e=>document.body.setAttribute('data-err',(document.body.getAttribute('data-err')||'')+e.message+' @'+e.lineno+'; '));
 setTimeout(async()=>{const r=[];try{const q=s=>document.querySelector(s),all=s=>Array.from(document.querySelectorAll(s)),click=e=>e&&e.dispatchEvent(new MouseEvent('click',{bubbles:true})),wait=ms=>new Promise(res=>setTimeout(res,ms));
+// Guard against bills going missing again: these statements gave 35 billers once breaks in a schedule and changing prices were handled.
+const found=window.__amfy.parseStatements(window.__files).items.length;r.push('billers found: '+found);if(found<35)r.push('ERR only '+found+' billers found on the real statements (35 expected): bills have gone missing again');
 const goBills=()=>{const b=document.createElement('button');b.dataset.act='go';b.dataset.v='chapter';b.dataset.ch='admin';b.dataset.stid='bills';document.body.appendChild(b);click(b);b.remove();};
 // fresh plan with people
 click(q('[data-act=start]'));await wait(30);for(let i=0;i<12&&!q('[data-act=scanfinish]');i++){click(q('[data-act=scannext]'));await wait(15);}click(all('[data-act=scanfinish]').find(b=>!b.dataset.ess));await wait(50);

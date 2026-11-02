@@ -188,6 +188,9 @@ button,input,textarea,select{font:inherit;color:inherit}
 .bqtx .num{font-variant-numeric:tabular-nums;color:var(--ink)}
 .bqfile{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .bqhead{display:grid;gap:8px}
+.howto{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:grid;gap:6px}
+.howto ol{margin:4px 0;padding-left:22px;display:grid;gap:6px}
+.pmsec{margin-top:8px}
 .bqedit{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:12px}
 .btn.bqa.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .bqwho{display:grid;gap:10px}
@@ -600,7 +603,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const fnv = (x, ...a) => typeof x === "function" ? x(...a) : x;
 const cap = s => String(s || "").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const filled = v => Array.isArray(v) ? v.length > 0 : !!(v && String(v).trim());
-const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],points:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
+const blankReg = () => ({people:[],accounts:[],retire:[],policies:[],assets:[],points:[],pms:[],debts:[],costs:[],docs:[],devices:[],digital:[],belongings:[],letters:[]});
 const blank = () => ({v:2, started:false, example:false, scanDone:false,
   settings:{name:"", tone:"soft", faith:"neutral", country:"AU", region:"NSW", subject:"me", subjectName:""},
   scan:{}, check:{}, answers:{}, status:{}, reg:blankReg(),
@@ -654,6 +657,89 @@ const names = arr => arr.map(p => p.name || "Unnamed").join(", ");
 
 /* ================= field constructors ================= */
 const yn = [["yes","Yes"],["no","No"]], ynu = [["yes","Yes"],["no","No"],["unsure","Not sure"]];
+
+/* ================= password managers ================= */
+// How to set up emergency access in each password manager, and what the family does later.
+// Checked against each company's own help pages, November 2026.
+const PM_GUIDES = [
+ {key:"bitwarden", name:"Bitwarden", re:/bitwarden/i, has:true,
+  steps:["Sign in to the Bitwarden web app (vault.bitwarden.com). Emergency access is set up there, not in the phone app.",
+   "Go to Settings › Emergency access, and choose Add emergency contact.",
+   "Enter their email, choose View (they can see your passwords) or Takeover (they can take over the account), and choose a waiting time.",
+   "They need their own Bitwarden account (free is fine), and must accept the email invitation within 5 days. Then go back to Emergency access and choose Confirm."],
+  note:"Needs Bitwarden Premium or a paid family plan. If they ask for access, you get an email and can refuse. If you don’t, they get in after the waiting time.",
+  family:"Sign in to your own Bitwarden account on the web, open Settings › Emergency access, and request access. It opens after the waiting time.",
+  link:["https://bitwarden.com/help/emergency-access/","Bitwarden’s guide"]},
+ {key:"1password", name:"1Password", re:/1 ?password|one ?password/i, has:false,
+  steps:["1Password has no emergency access, so leave your family another way in.",
+   "Save your Emergency Kit: at 1password.com, choose your name, then Get Emergency Kit. Print it, and write your account password on it.",
+   "Keep the printed kit somewhere your executor can reach, such as with your will or your lawyer. Note where below, but never put the password in this plan.",
+   "On a 1Password Families plan, you can also make a trusted person a family organiser. They can help recover your account, but the recovery email goes to your email address."],
+  family:"Sign in with the Emergency Kit. If a family organiser was set up, they can start account recovery.",
+  link:["https://support.1password.com/family-recovery-plan/","1Password’s recovery guide"]},
+ {key:"apple", name:"Apple Passwords", re:/apple|icloud|keychain|safari/i, has:false,
+  steps:["Apple’s Legacy Contact doesn’t include passwords or passkeys, so on its own it won’t get your family into your accounts.",
+   "Share the important passwords now: in the Passwords app, tap + and choose New Group, add your trusted person, then move the passwords into the group. They need an Apple device, and to be in your contacts.",
+   "For your photos and files, add a Legacy Contact: Settings › your name › Sign-In & Security › Legacy Contact. Keep a copy of the access key with your will."],
+  family:"Passwords in a shared group are already in your own Passwords app. For photos and files, the Legacy Contact uses the access key and a death certificate at digital-legacy.apple.com.",
+  link:["https://support.apple.com/102631","Apple’s Legacy Contact guide"]},
+ {key:"google", name:"Google Password Manager", re:/google|chrome|android/i, has:false,
+  steps:["Google has no emergency access for passwords. Inactive Account Manager can pass on your data, such as Gmail and Photos, but not your saved passwords.",
+   "Share the important passwords now: set up a Google family group, then in Google Password Manager open a password and choose Share. They get their own copy, so share it again if you change it.",
+   "Set up Inactive Account Manager for the rest at myaccount.google.com/inactive: choose how long Google should wait, and who it tells."],
+  family:"Passwords shared with your family group are already in your own Google Password Manager. Google emails the people chosen in Inactive Account Manager.",
+  link:["https://myaccount.google.com/inactive","Inactive Account Manager"]},
+ {key:"lastpass", name:"LastPass", re:/lastpass/i, has:true,
+  steps:["Sign in to your LastPass vault on the web, and choose Emergency Access in the menu.",
+   "Under People I Trust, add your trusted person’s email, and choose a waiting time.",
+   "They need their own LastPass account, and must accept the invitation."],
+  note:"Needs LastPass Premium or Families. If they ask for access, you get an email and can refuse during the waiting time.",
+  family:"Sign in to your own LastPass account, open Emergency Access, and request access. It opens after the waiting time.",
+  link:["https://www.lastpass.com/features/emergency-access","LastPass Emergency Access"]},
+ {key:"keeper", name:"Keeper", re:/keeper/i, has:true,
+  steps:["In Keeper, go to Account › Emergency Access.", "Add up to five trusted people by email, and choose a waiting time.", "They need their own Keeper account, and must accept the invitation."],
+  note:"If they ask for access, you can refuse during the waiting time.",
+  family:"Sign in to your own Keeper account and request emergency access. It opens after the waiting time.",
+  link:["https://www.keepersecurity.com/en_GB/features/emergency-access/","Keeper Emergency Access"]},
+ {key:"nordpass", name:"NordPass", re:/nordpass/i, has:true,
+  steps:["In NordPass, open Settings, scroll to Other, and choose Emergency access (on Android, it’s under Tools).", "Choose Give Access, enter their email, and confirm.", "They need their own NordPass account (free is fine)."],
+  note:"Needs NordPass Premium or Family. If they ask for access, you get an email.",
+  family:"In your own NordPass app, open Emergency access and choose Request to see passwords.",
+  link:["https://support.nordpass.com/hc/en-us/articles/5691777958929-How-to-give-Emergency-Access-in-NordPass","NordPass’s guide"]},
+ {key:"proton", name:"Proton Pass", re:/proton/i, has:true,
+  steps:["Sign in to your Proton account on the web, and open Settings › Recovery.", "Under Emergency access, add up to five trusted people, and choose a waiting time.", "Both of you need a Proton email address, and it needs a paid Proton plan."],
+  note:"It covers your whole Proton account, including Pass. If they ask for access, you can approve or refuse. If you don’t, they get in after the waiting time.",
+  family:"Sign in to your own Proton account, open Settings › Recovery, and request emergency access.",
+  link:["https://proton.me/support/emergency-access","Proton’s guide"]},
+ {key:"dashlane", name:"Dashlane", re:/dashlane/i, has:false,
+  steps:["Dashlane no longer has emergency contacts.", "Its suggested way: export your data to a password-protected file (a DASH file), and keep the file somewhere your trusted person can reach.", "Put the file’s password in a Dashlane Secure Note and share the note with them. Once they accept, sign in to Dashlane once more so the share goes through."],
+  family:"Open the exported file, using the password in the shared Secure Note.",
+  link:["https://support.dashlane.com/hc/articles/4407179219986","Dashlane’s guide"]},
+ {key:"browser", name:"Passwords saved in my browser", re:/browser|edge|firefox|brave|opera/i, has:false,
+  steps:["Chrome saves to Google Password Manager: add that one instead, for its steps.", "Edge, Firefox and most other browsers have no emergency access.", "Move the logins that matter into the vault above, or into a password manager that has emergency access."],
+  family:"Look in the vault for these logins."}];
+const PM_OTHER = {key:"other", name:"Another password manager", has:null,
+  steps:["Look in its settings for Emergency access, Legacy contact or Trusted contacts, and add your trusted person.", "If it has none, print its recovery or emergency kit, and keep it with your will.", "Put the logins that matter most in the vault above, too."],
+  family:"Use its emergency access, or the recovery kit kept with the will."};
+const pmGuide = x => PM_GUIDES.find(g => g.re.test(x.what || "")) || PM_OTHER;
+const ACC3 = [["yes","Yes"],["no","Not yet"],["unsure","Not sure"]];
+function pmHowHTML(x){
+  const g = pmGuide(x), nm = esc(x.what || g.name);
+  return `<div class="howto"><span class="label">${g.has === false ? "How to leave a way into " + nm : "How to set up emergency access in " + nm}</span>
+    <ol>${g.steps.map(s2 => `<li>${esc(s2)}</li>`).join("")}</ol>${g.note ? `<p class="help">${esc(g.note)}</p>` : ""}${g.link ? `<p class="small"><a href="${esc(g.link[0])}" target="_blank" rel="noopener">${esc(g.link[1])} ›</a></p>` : ""}</div>`;
+}
+function pmsHTML(){
+  return `<div class="stack pmsec"><h3>Your password managers</h3><p class="help">Add each one you use. Each shows its own steps, so the right people can get in without ever knowing your master password.</p>${regHTML("pms")}</div>`;
+}
+// Plans from before several password managers: the one chosen becomes a card, with the people who looked after "digital".
+function movePms(s){
+  const a2 = s.answers || {}, pm = a2["admin.vault.pm"]; if (!pm && !a2["admin.vault.pmaccess"]) return s;
+  if (!Array.isArray(s.reg.pms)) s.reg.pms = [];
+  const names = {bitwarden:"Bitwarden", "1password":"1Password", apple:"Apple Passwords", google:"Google Password Manager", browser:"Passwords saved in my browser", other:"Another password manager"};
+  if (names[pm] && !s.reg.pms.length) s.reg.pms.push({id:uid(), what:names[pm], access:["yes","no","unsure"].includes(a2["admin.vault.pmaccess"]) ? a2["admin.vault.pmaccess"] : "",
+    people:(s.reg.people || []).filter(p => (p.roles || []).includes("digital") && filled(p.name)).map(p => ({name:p.name, pct:""}))});
+  delete a2["admin.vault.pm"]; delete a2["admin.vault.pmaccess"]; return s;
+}
 const t = (k,label,o={}) => ({k,label,type:"text",...o});
 const a = (k,label,o={}) => ({k,label,type:"area",...o});
 const c = (k,label,opts,o={}) => ({k,label,type:"choice",opts,...o});
@@ -984,6 +1070,19 @@ const REG = {
     presets:() => ["Home","Investment property","Car","Boat / caravan","Shares","Managed fund","Cryptocurrency","Collectibles","Business interest","Land"].map(n => ({label:n, data:{what:n, type:n}})),
     fields:() => [t("what","What is it?"), t("type","Type"), c("ownership","How is it owned?",OWN,{help:"Joint tenants: passes to the other owner automatically, without probate. Tenants in common: your share follows your will."}),
       p("intendedFor","Who should it go to?",{split:true, help:"If it’s to be shared, give each person’s share. Your will (or how it’s owned) is what decides this legally."}), a("notes","Notes (where the paperwork is, any loan against it)",{smart:true, rows:3})]},
+  // Password managers: one card each, with its own emergency access steps and the people who can get in.
+  pms:{noun:"password manager", title:x => x.what,
+    sub:x => { const g = pmGuide(x); return [x.access === "yes" ? (g.has === false ? "a way in is set up" : "emergency access set up") : x.access === "no" ? "not set up yet" : x.access === "unsure" ? "not sure it’s set up" : "",
+      filled(x.people) && "for " + whoText(x.people)].filter(Boolean).join(" · "); },
+    presets:() => PM_GUIDES.map(g => ({label:g.name, data:{what:g.name}})),
+    fields:() => [t("what","Password manager",{ph:"e.g. Bitwarden"}),
+      c("access","Is emergency access set up?",ACC3,{show:x => pmGuide(x).has !== false}),
+      c("access","Is there a way in for your family?",ACC3,{show:x => pmGuide(x).has === false, help:"For example a shared group, or a printed emergency kit kept with your will."}),
+      p("people","Who should be able to get in?",{help:"The people you’ve named, or will name, as emergency contacts."}),
+      t("account","Which email or username it’s under",{ph:"e.g. my Gmail address (never the password)"}),
+      t("kit","Where’s the emergency kit or recovery code kept? (the place only)",{ph:"e.g. Sealed envelope with my will"}),
+      a("notes","Notes",{rows:2, more:true})],
+    entryHow:x => pmHowHTML(x)},
   // Points, vouchers and credit: set out like assets, with who gets them and the details needed to claim them.
   points:{noun:"card or program", title:x => x.what || x.type,
     sub:x => [x.what && x.type, x.balance, x.expires && "expires " + x.expires, x.outcome === "Close" ? "close it" : filled(x.intendedFor) && "to " + whoText(x.intendedFor)].filter(Boolean).join(" · "),
@@ -1094,9 +1193,7 @@ const CHAPTERS = [
    {id:"keep", title:"Your phone number and email", why:"Your phone number and email are how your family will get into everything else. Security codes go to your phone, and password resets go to your email. Cancelling either too early can lock them out.",
     fields:[t("mobile","Mobile number and provider",{ph:"e.g. 0400 000 000 (Telstra)"}), t("email","Main email account",{ph:"The provider is enough, e.g. Gmail"}), r("phone_keeper","Who will keep the phone paid and charged?")]},
    {id:"vault", title:"The vault", why:"Card numbers, passwords and codes go here, and nowhere else. The vault is scrambled on this device with a passphrase only you know, before anything is saved. Nobody else can read it.", vault:true,
-    fields:[c("pm","Which password manager do you use for everything else?",[["bitwarden","Bitwarden"],["1password","1Password"],["apple","Apple Passwords"],["google","Google Password Manager"],["browser","Passwords saved in my browser"],["other","Another one"],["none","None"]]),
-     c("pmaccess","Is its emergency access set up?",ynu), r("digital","Who should be able to get in?")],
-    after:() => pmTipHTML()},
+    after:() => pmsHTML()},
    {id:"devices", title:"Phones and computers", why:"Locked devices can hold years of photos. Say who can unlock them, and what should happen to each.", reg:"devices"},
    {id:"digital", title:"Online accounts", why:"Some services let you choose a legacy contact now. Doing it saves your family months of paperwork.", reg:"digital",
     tip:() => S.scan.phone === "android" ? "On Android, set up Google’s Inactive Account Manager so a trusted person can get your photos and files." : S.scan.phone === "iphone" ? "On iPhone, add a Legacy Contact: Settings › your name › Sign-In & Security › Legacy Contact." : ""},
@@ -1190,7 +1287,7 @@ const stepsOf = ch => { const f = F(); return ch.steps.filter(st => !st.when || 
 const stepFind = (cid, sid) => { const ch = chapterById(cid); const st = ch && ch.steps.find(s => s.id === sid); return [ch, st]; };
 function stepHas(ch, st){
   if (st.reg) return S.reg[st.reg].length > 0;
-  if (st.vault && S.vault && S.vault.count) return true;
+  if (st.vault && ((S.vault && S.vault.count) || S.reg.pms.length)) return true;
   if (st.pros) return S.reg.people.some(p => (p.roles || []).includes("professional"));
   const f = F();
   return (st.fields || []).some(fd => (!fd.when || fd.when(f)) && (fd.type === "role" ? holders(fd.role).length > 0 : filled(S.answers[`${ch.id}.${st.id}.${fd.k}`])));
@@ -1257,6 +1354,9 @@ const KNOWN = [
   [/\bNRMA\b|\bRACV\b|\bRACQ\b|\bRAA\b|\bRAC\b/,"Roadside assistance","Memberships"],[/\bAA (MEMBERSHIP|NZ)/,"AA membership","Memberships"],
   [/ALLIANZ|\bAAMI\b|SUNCORP|BUDGET DIRECT|\bYOUI\b|\bQBE\b|\bGIO\b|TOWER|\bAMI\b|STATE INSURANCE/,"Insurance","Insurance premiums"],[/\bTAL\b|\bAIA\b|ZURICH|\bMLC\b|CLEARVIEW|\bNEOS\b/,"Life insurance","Insurance premiums"],
   [/COUNCIL|\bRATES\b/,"Council rates","Home"],[/SYDNEY WATER|YARRA VALLEY|URBAN UTILITIES|WATERCARE|SA WATER|WATER CORP/,"Water","Home","","usage"],
+  // Rent, and water bills paid to the same agent ("5 Wedge Rent …", "5 Wedge Water …"), so the two aren't merged into one.
+  [/\bRENT\b/,"Rent","Home"],[/\bWATER\b(?=.*\bBPAY\b)|\bBPAY\b.*\bWATER\b/,"Water","Home","","usage"],
+  [/SUPERLOOP/,"Superloop","Home"],[/\bDODO\b/,"Dodo","Home"],[/EXETEL/,"Exetel","Home"],[/TANGERINE TELECOM/,"Tangerine","Home"],
   [/WORLD VISION|UNICEF|RED CROSS|MEDECINS|\bMSF\b|OXFAM|COMPASSION|SALVATION|CANCER COUNCIL/,"Charity","Giving"],[/PATREON/,"Patreon","Giving"],
   [/HELLO ?FRESH|MARLEY SPOON|DINNERLY/,"Meal kit","Deliveries"],[/LINKT|E-?TOLL|TRANSURBAN|ROAMEXPRESS|GO ?VIA|\bE-?WAY\b|\bTOLLS?\b/,"Tolls","Vehicles","Toll top-ups vary with how much you drive","usage"]];
 const NOISE = /\b(DIRECT DEBIT|DEBIT|DD|VISA|MASTERCARD|PURCHASE|CARD|EFTPOS|TRANSFER|PAYMENT|RECURRING|AUTOPAY|POS|AUS|AU|NZ|NZL|AUSTRALIA|NSW|VIC|QLD|WA|SA|TAS|ACT|NT|SYDNEY|MELBOURNE|BRISBANE|PERTH|ADELAIDE|HOBART|CANBERRA|DARWIN|AUCKLAND|WELLINGTON|CHRISTCHURCH|PTY|LTD|LIMITED|INC|COM|WWW|HTTPS|VALUE DATE|TAP AND PAY|PAYPAL)\b/g;
@@ -1296,7 +1396,9 @@ const STOPW = new Set(["australia","australian","payment","payments","paypal","d
 const cleanBiz = n => { let s = String(n || "").replace(/\b(pty\.?|ltd\.?|limited|inc\.?|llc|b\.v\.|unlimited company|company|technologies|australia|ireland|group|holdings|services)\b/gi, "").replace(/[,.]+$/g, "").replace(/\s+/g, " ").trim(); if (s === s.toUpperCase()) s = cap(s); return s || String(n || "").trim(); };
 const SKIP_TYPE = /PAYMENT|REFUND|ADJUSTMENT|INTEREST|DEPOSIT|TRANSFER IN/i;
 // Not bills: interest and fee lines, and money moving between your own accounts or paying off a card (which would double-count the card's spending).
-const SKIP_DESC = /INTEREST CHARGED|LATE PAYMENT FEE|INTERNATIONAL TRANSACTION FEE|THANK YOU|FEE REVERSAL|INTERNAL TRANSFER|AMERICAN EXPRESS|\bAMEX\b|CREDIT CARD PAYMENT|CARD REPAYMENT|PAYMENT RECEIVED|TRANSFER TO .*(SAVINGS|ACCOUNT)/i;
+// Never bills: fees and interest, payments between the person's own accounts and cards, top-ups of other money apps,
+// and public transport fares (they can look regular on a commute, but nobody needs to cancel them).
+const SKIP_DESC = /INTEREST CHARGED|LATE PAYMENT FEE|INTERNATIONAL TRANSACTION FEE|THANK YOU|FEE REVERSAL|INTERNAL TRANSFER|AMERICAN EXPRESS|\bAMEX\b|CREDIT CARD PAYMENT|CARD REPAYMENT|PAYMENT RECEIVED|TRANSFER TO .*(SAVINGS|ACCOUNT)|REVOLUT|OPAL FARE|\bTFNSW\b|TRANSPORTFORNSW|TRANSPORT FOR NSW|\bMYKI\b|TRANSLINK|TRANSPERTH|METROCARD|SNAPPER/i;
 const SKIP_CAT = /restaurant|takeaway|grocer|fuel|petrol|cafe|coffee|transport|refund|transfer|attraction|event|travel|holiday|alcohol|bar|pub|entertainment|parking|taxi|rideshare|cash|income|salary/i;
 const SUB_CAT = /subscri|utilit|insur|phone|internet|mobile|gym|fitness|education|school|membership|health|energy|electric|gas|water|rates|childcare|loan/i;
 function catFromBank(b){
@@ -1390,12 +1492,20 @@ function findRecurring(tx){
   const row = x => ({d:iso(x.date), a:x.amt, s:x.src, m:x.merchant || "", t:String(x.desc).replace(/\d{5,}/g, "").replace(/\s+/g, " ").trim().slice(0, 80)});
   const dedupe = txs => { const m2 = {}; txs.forEach(x => { m2[x.date.toDateString() + "|" + x.amt + "|" + x.desc.toUpperCase().replace(/\s+/g, " ").trim()] = x; }); return Object.values(m2).sort((p, q2) => p.date - q2.date); };   // also drops the same charge appearing in two overlapping files
   const freqOf = gap => !gap ? null : gap <= 10 ? "Weekly" : gap <= 20 ? "Fortnightly" : gap <= 45 ? "Monthly" : gap <= 120 ? "Quarterly" : "Yearly";
+  // On a schedule: most gaps match the usual one. Real statements have breaks, so a few gaps can be whole multiples of it
+  // (a missed month, a pause, moving the bill to another card), and with five or more gaps one can be off (a new billing day).
+  const onSchedule = (gaps, gap) => {
+    const tol = Math.max(4, gap * .35), near = gp => Math.abs(gp - gap) <= tol;
+    const multi = gp => { const k = Math.round(gp / gap); return k >= 2 && k <= 12 && Math.abs(gp - k * gap) <= tol * Math.min(k, 3); };
+    const beat = gaps.filter(near).length, fit = gaps.filter(gp => near(gp) || multi(gp)).length;
+    return beat >= Math.ceil(gaps.length * .6) && fit >= gaps.length - (gaps.length >= 5 ? 1 : 0);
+  };
   // Does this set of charges repeat on a schedule? Returns the pattern, or null.
   const pattern = (g, txs, split) => {
     const u = dedupe(txs), amts = u.map(x => x.amt).sort((p, q2) => p - q2), med = amts[Math.floor(amts.length / 2)];
     const gaps = u.slice(1).map((x, i) => (x.date - u[i].date) / 864e5).filter(gp => gp > 3);
     const sg = gaps.slice().sort((p, q2) => p - q2), gap = sg.length ? sg[Math.floor(sg.length / 2)] : null;
-    const regular = !!gap && gaps.every(gp => Math.abs(gp - gap) <= Math.max(4, gap * .35));
+    const regular = !!gap && onSchedule(gaps, gap);
     const trusted = !!g.known || SUB_CAT.test(g.bcat);
     const ok = (u.length >= 3 && regular) || (u.length === 2 && gap && (split ? !!g.known : trusted)) || (u.length === 1 && g.known && !split);
     return ok ? {u, med, gap, freq:freqOf(gap), pick:u.length >= 2 && (trusted || u.length >= 4)} : null;
@@ -1427,11 +1537,19 @@ function findRecurring(tx){
         txs:u.slice(0, 24).map(x => ({d:iso2(x.date), a:x.amt, s:x.src, m:x.merchant || "", t:String(x.desc).replace(/\d{5,}/g, "").replace(/\s+/g, " ").trim().slice(0, 80)}))});
       return;
     }
-    const single = (p, extra) => { const st = stale(p);
-      push(g, {amount:Math.round(p.med * 100) / 100, freq:p.freq, pick:p.pick && !st, stopped:st,
+    // The amount is the latest price: the middle of the last three charges, so a price rise shows at once.
+    const single = (p, extra) => { const st = stale(p), rec = p.u.slice(-3).map(x => x.amt).sort((a2, b2) => a2 - b2);
+      push(g, {amount:Math.round(rec[Math.floor(rec.length / 2)] * 100) / 100, freq:p.freq, pick:p.pick && !st, stopped:st,
         note:(st ? `May have stopped: last charged ${fmtD(lastOf(p))}` : p.u.length >= 2 ? `Seen ${p.u.length} times, last on ${fmtD(lastOf(p))}` : "Seen once: check how often it’s charged") + (extra || "") + (g.note ? ". " + g.note : ""), txs:p.u.slice(-24).reverse().map(row)}); };
     const amts = all.map(x => x.amt).sort((p, q2) => p - q2), med = amts[Math.floor(amts.length / 2)];
     if (amts.every(v => Math.abs(v - med) <= Math.max(2, med * .2))) { const p = pattern(g, all, false); if (p) single(p); return; }
+    // One charge each period, but the price changes (an internet plan that keeps going up): one bill at the latest price.
+    // A price moves in steps, so most charges match the one before, and the last three agree. A weekly shop that
+    // happens to be regular changes every time, so it isn't mistaken for a bill.
+    const pAll = pattern(g, all, false), last3 = pAll ? pAll.u.slice(-3).map(x => x.amt).sort((a2, b2) => a2 - b2) : [];
+    const steps = pAll ? pAll.u.slice(1).filter((x, i) => Math.abs(x.amt - pAll.u[i].amt) <= Math.max(.5, pAll.u[i].amt * .02)).length : 0;
+    if (pAll && pAll.u.length >= (g.known ? 3 : 4) && pAll.u.every((x, i) => !i || (x.date - pAll.u[i - 1].date) / 864e5 > 3)
+      && steps >= Math.ceil((pAll.u.length - 1) * .6) && last3.every(v => Math.abs(v - last3[1]) <= Math.max(2, last3[1] * .1))) { single(pAll, `. The amount varies: $${amts[0].toFixed(2)} to $${amts[amts.length - 1].toFixed(2)}`); return; }
     // Amounts vary: find each repeating amount (e.g. several subscriptions all billed by Apple), then report the biller once.
     const buckets = {}; all.forEach(x => { const k = x.amt.toFixed(2); (buckets[k] = buckets[k] || []).push(x); });
     const parts = Object.values(buckets).map(txs => pattern(g, txs, true)).filter(Boolean).sort((p, q2) => q2.med - p.med);
@@ -1648,7 +1766,9 @@ function suggestions(){
   if (f.gov) add("gov",`Tell ${l.welfare} quickly`,"Payments made after death usually have to be paid back, which can delay the estate.", "");
   if (!S.reg.digital.some(x => x.legacy === "yes")) add("legacy","Set up legacy contacts","Apple, Google, Facebook and password managers let you choose who can get in after you die. It takes a few minutes now.", "", ["admin","digital"]);
   if (S.vault) add("vaultpass","Leave your vault passphrase somewhere safe","Without it, nobody can open the vault, not even us. Put it in a sealed envelope with your will, or give it to your lawyer, and tell your executor where it is.", "Ask your lawyer: can you hold a sealed envelope with my will?");
-  if ((s.digital || []).includes("pm") && ans("admin.vault.pmaccess") !== "yes") add("pmaccess","Set up emergency access in your password manager","Most password managers let you name someone who can request access if something happens to you. You stay in control, and you never have to hand over your master password.", "", ["admin","vault"]);
+  const pmOpen = S.reg.pms.filter(x => x.access !== "yes");
+  if (pmOpen.length) add("pmaccess", `Set up a way into ${andJoin(pmOpen.map(x => x.what || "your password manager"))}`, "Most password managers let you name someone who can ask for access if something happens to you. You stay in control, and you never hand over your master password. The steps for each one are on the vault page.", "", ["admin","vault"]);
+  else if ((s.digital || []).includes("pm") && !S.reg.pms.length) add("pmaccess","Add your password manager","Say which password manager you use, then follow its steps to set up emergency access. You never hand over your master password.", "", ["admin","vault"]);
   return out;
 }
 function sooner(){
@@ -1954,6 +2074,8 @@ function exampleState(){
   s.billSetup = {done:true, types:{"Home":["Electricity","Water","Council rates","Internet"], "Phone & TV":["Mobile plan","Netflix","Spotify"], "Health & fitness":["Gym","Private health insurance"], "Memberships":["Roadside assistance"], "Vehicles":["Car registration","Car insurance"]}};
   s.reg.docs = [{id:uid(), type:"Will", location:"Original held by Priya Shah, Shah Legal", date:"2014-05-02"}, {id:uid(), type:"Property title / mortgage papers", location:"Grey filing cabinet in the study, top drawer"}];
   s.reg.digital = [{id:uid(), platform:"Apple ID", outcome:"Download then close", legacy:"no"}, {id:uid(), platform:"Main email", outcome:"Keep", legacy:"no"}];
+  s.reg.pms = [{id:uid(), what:"Bitwarden", access:"yes", people:[{name:"Jo Morgan", pct:""}], account:"My Gmail address", kit:"Sealed envelope with the will, held by Priya Shah"},
+    {id:uid(), what:"Apple Passwords", access:"no", people:[]}];
   s.reg.belongings = [{id:uid(), item:"Grandad’s watch", story:"Bought in Lae in 1962 with his first pay packet. He wore it every day until he gave it to me at my 21st.", forWhom:[{name:"Tom Morgan", pct:""}], where:"Bedside drawer"}];
   s.reg.letters = [{id:uid(), personId:mia.id, rel:"child", body:"Dear Mia,\n\nI keep thinking about the afternoon you finally rode without the trainer wheels, wobbling down Latrobe Terrace and yelling at me not to let go. I’d let go three houses earlier.\n\n", deliver:"release"},
                    {id:uid(), personId:tom.id, rel:"young", body:"", deliver:"occasion", occasion:"His 18th birthday"}];
@@ -1995,7 +2117,7 @@ const setB = (b, v) => { const [o,k] = ref(b); o[k] = v; };
 
 let store = {ref:null}, saveTimer = null, saving = Promise.resolve(), saveLabel = "";
 const LS = "amfy-plan-v2";
-function hydrate(o){ const b = blank(); return evenDefaults(movePoints(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []}))); }
+function hydrate(o){ const b = blank(); return evenDefaults(movePms(movePoints(Object.assign(b, o, {settings:Object.assign(b.settings, o.settings || {}), reg:Object.assign(blankReg(), o.reg || {}), release:Object.assign(b.release, o.release || {}), check:o.check || {}, customTypes:o.customTypes || {}, customCats:o.customCats || [], billSetup:o.billSetup || null, notBills:o.notBills || []})))); }
 function loadLocal(){ try { const raw = localStorage.getItem(LS); if (raw) return hydrate(JSON.parse(raw)); } catch(e) {} return null; }
 function save(){
   clearTimeout(saveTimer); setSave("Saving…");
@@ -2116,7 +2238,7 @@ function entryHTML(name, it){
       const opt = c2 => `<option value="${c2.id}">${esc(c2.provider || "Unnamed")}</option>`;
       seen += `<div class="row" style="gap:8px"><label class="small muted" for="mg_${it.id}">Same bill as another entry?</label><select id="mg_${it.id}" style="width:auto;max-width:100%;padding:5px 10px;font-size:.88rem"><option value="">Choose a bill…</option>${cands.length ? `<optgroup label="Likely the same">${cands.map(opt).join("")}</optgroup>` : ""}<optgroup label="All bills">${others.map(opt).join("")}</optgroup></select><button class="btn sm" data-act="mergecost" data-id="${it.id}">Combine</button></div>`;
     }
-    return `<div class="entry open">${head}<div class="entry-body">${top}${billers}${etip ? `<div class="tip">${esc(etip)}</div>` : ""}<div class="grid2">${body}</div>${seen}<div class="row between"><button class="btn sm primary" data-act="open" data-id="">Done</button><div class="row">${del}</div></div></div></div>`;
+    return `<div class="entry open">${head}<div class="entry-body">${top}${billers}${etip ? `<div class="tip">${esc(etip)}</div>` : ""}${def.entryHow ? def.entryHow(it) : ""}<div class="grid2">${body}</div>${seen}<div class="row between"><button class="btn sm primary" data-act="open" data-id="">Done</button><div class="row">${del}</div></div></div></div>`;
   }
 }
 function costsExtra(){
@@ -2718,16 +2840,6 @@ function vaultHTML(){
     <p class="help">Changes are saved, encrypted, as you type. The vault locks itself after 5 minutes, or when you leave this page.</p>
     <div class="panel"><span class="label">How your executor gets in</span><p class="help">Only in the second stage of release, after a death certificate. They’ll also need your passphrase: put it in a sealed envelope with your will, or give it to your lawyer. Never write it anywhere in this plan.</p></div>
     <div class="row">${V.confirmWipe ? `<span class="small">Delete the whole vault and everything in it?</span><button class="btn sm" data-act="vwipeyes">Yes, delete it</button><button class="btn sm ghost" data-act="vwipeno">Keep it</button>` : `<button class="btn sm ghost" data-act="vwipe">Delete the vault</button>`}</div></div>`;
-}
-function pmTipHTML(){
-  const pm = ans("admin.vault.pm");
-  const tips = {bitwarden:"In Bitwarden, open Settings › Emergency access, invite your trusted person, and choose a waiting time. They can ask for access; if you don’t refuse within that time, they get in.",
-    "1password":"In a 1Password family account, a family organiser can recover your account. On your own, print your Emergency Kit and keep it with your will.",
-    apple:"Apple’s Legacy Contact gives access to photos and files, but not your saved passwords. Put the important ones in the vault, or move them to a password manager with emergency access.",
-    google:"Set up Inactive Account Manager in your Google Account, and choose who gets your data if you stop using it.",
-    browser:"Passwords saved in a browser are hard for anyone else to reach. Move the important ones into the vault, or into a password manager with emergency access.",
-    none:"That’s fine. Put the logins that matter most in the vault above."};
-  return pm && tips[pm] ? `<div class="tip">${esc(tips[pm])}</div>` : "";
 }
 
 /* ================= views ================= */
@@ -3339,6 +3451,8 @@ function familyTasks(sit){
     S.reg.retire.forEach(x => add("ret-" + x.id, "later", `Claim from ${x.fund || L().fund}`, [!L().nz && x.nomination && "Nomination: " + x.nomination, !L().nz && filled(x.nominee) && "To " + whoText(x.nominee), x.insurance === "yes" && "Ask about the insurance inside it"].filter(Boolean).join(" · "), nmOf(exec)));
     S.reg.policies.forEach(x => add("pol-" + x.id, "later", `Claim on the ${x.type || "insurance"} policy`, [x.insurer, filled(x.beneficiary) && "To " + whoText(x.beneficiary), x.where && "Document: " + x.where].filter(Boolean).join(" · "), nmOf(exec)));
     S.reg.assets.filter(x => filled(x.intendedFor)).forEach(x => add("ast-" + x.id, "later", `${x.what || "The asset"}: to ${whoText(x.intendedFor)}`, [x.ownership, x.notes].filter(Boolean).join(" · "), nmOf(exec)));
+    S.reg.pms.forEach(x => { const g = pmGuide(x), who = plist(x.people).map(p => firstName(p.name)).filter(Boolean);
+      add("pm-" + x.id, "week", `Get into ${x.what || g.name}`, [g.family, x.account && "Account: " + x.account, x.kit && "Emergency kit or recovery code: " + x.kit].filter(Boolean).join("\n"), who.length ? who : nmOf(exec)); });
     S.reg.points.forEach(x => add("pts-" + x.id, "later", `${x.what || x.type || "Points or voucher"}: ${pointsTodo(x)}`, pointsDetail(x).join("\n"), nmOf(exec)));
     if (S.reg.costs.length) { const n = k => S.reg.costs.filter(x => x.outcome === k).length; add("bills", "later", "Sort out the bills", `${n("Cancel")} to cancel, ${n("Transfer")} to hand on, ${n("Keep")} to keep for now. The list is in the executor’s list.`, nmOf(exec)); }
     S.reg.belongings.forEach(x => add("bel-" + x.id, "later", `Give ${x.item || "the item"} to ${whoText(x.forWhom) || "the chosen person"}`, [x.story, x.notes].filter(Boolean).join("\n"), nmOf(exec)));
@@ -3353,9 +3467,9 @@ function planFacts(){
     (st.fields || []).forEach(fd => { if (fd.private || (fd.when && !fd.when(f))) return; const v = valText(ch, st, fd); if (v) push(`${ch.title} › ${fnv(st.title)}`, fnv(fd.label), v, `${ch.id}.${st.id}.${fd.k}`); });
   }));
   familyPeople().concat(S.reg.people.filter(p => (p.roles || []).includes("professional"))).forEach(p => push("Family › People", p.name, [p.rel, p.phone, (p.roles || []).filter(r => r !== "professional").map(roleName).join(", ")].filter(Boolean).join(" · ")));
-  ["accounts","retire","policies","assets","points","debts","costs","docs","digital","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
-    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
-      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
+  ["accounts","retire","policies","assets","points","debts","costs","docs","digital","pms","devices","belongings"].forEach(rg => S.reg[rg].forEach(x => { const d2 = REG[rg]; if (!d2) return;
+    push(({accounts:"Money › Bank accounts", retire:"Money › " + L().retire, policies:"Money › Insurance", assets:"Money › Property and assets", points:"Money › Points, vouchers and credit", debts:"Money › Debts", costs:"Admin › Bills", docs:"Admin › Documents", digital:"Admin › Online accounts", pms:"Admin › Password managers", devices:"Admin › Phones and computers", belongings:"Personal › Belongings"})[rg],
+      d2.title(x) || d2.noun, [d2.sub(x), d2.amt ? d2.amt(x) : "", rg === "points" && x.member && "Member or card: " + x.member, rg === "pms" && x.account && "Account: " + x.account, rg === "pms" && x.kit && "Emergency kit or recovery code: " + x.kit, x.desc, x.location, x.where, x.story, x.notes].filter(Boolean).join(" · ")); }));
   Object.keys(WORDS).forEach(sec => WORDS[sec].items.forEach((it, i) => push("Letters and words › " + WORDS[sec].title, it.q, S.answers[wordsKey(sec, i)], wordsKey(sec, i))));
   return out;
 }
@@ -3783,6 +3897,7 @@ function executorDoc(){
     (ans("personal.keepdelete.delete") || []).length ? "Delete without reading: " + esc((ans("personal.keepdelete.delete") || []).map(v => optLabel("personal","keepdelete","delete",v)).join(", ")) + (holders("digital").length ? " (" + holders("digital").map(p => esc(p.name)).join(", ") + " is looking after this)" : "") + "." : "",
     ...S.reg.devices.map(x => `${esc(x.what || "Device")}: ${esc(({Keep:"keep it", Give:"give it to " + (x.giveTo || "the chosen person"), Wipe:"copy what matters, then wipe and recycle", Decide:"decide what to do"})[x.outcome] || "decide what to do")}.`),
     ...S.reg.belongings.map(x => `Give ${esc(x.item || "the item")} to ${esc(whoText(x.forWhom) || "the chosen person")}${x.story ? ", and tell them the story: " + esc(x.story) : "."}${x.notes ? " " + esc(x.notes) : ""}`),
+    ...S.reg.pms.map(x => { const g = pmGuide(x); return `${esc(x.what || g.name)}: ${filled(x.people) ? esc(whoText(x.people)) + " can get in. " : ""}${esc(g.family)}${x.account ? " Account: " + esc(x.account) + "." : ""}${x.kit ? " Emergency kit or recovery code: " + esc(x.kit) + "." : ""}`; }),
     ...S.reg.points.map(x => `${esc(x.what || x.type || "Points or voucher")}: ${esc(pointsTodo(x))}.${pointsDetail(x).length ? " " + esc(pointsDetail(x).map(sentence).join(" ")) : ""}`),
     ans("money.owed.who") ? "Money owed to the estate: " + esc(ans("money.owed.who")) + (ans("money.owed.intent") === "forgive" ? " (their wish: forgive these loans)" : ans("money.owed.intent") === "repay" ? " (their wish: these should be repaid)" : "") : ""];
   return `<h1>Executor’s list</h1><p class="lead">A step-by-step list for whoever is looking after ${nm}’s affairs. Work through it at your own pace, and tick things off with whoever is helping.</p>
